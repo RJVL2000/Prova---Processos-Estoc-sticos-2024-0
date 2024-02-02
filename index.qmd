@@ -1,0 +1,208 @@
+# Prova 2 de Processo Estocásticos {.unnumbered}
+
+
+
+```{r}
+#| echo: false
+
+# Load libraries
+library(ggplot2)
+library(stringr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+
+# Set seed
+set.seed(12345)
+
+```
+
+
+## Aplicação ao modelo empírico
+
+Trata-se de um modelo para avaliar as probabilidades de transição entre os estados de precipitação de chuvas.
+
+```{r}
+
+# Importing data
+dados <-
+    read.delim("dados.txt",
+        header = TRUE,
+        sep    = ";"
+    ) |>
+    select(-X) |>
+    filter(!is.na(Precipitacao))
+
+# Summary statistics
+dados$Precipitacao |> summary()
+```
+
+
+O primeiro passo é discretizar a variável de precipitação, que é feita com a função `cut()` do pacote `base`. Para esse exemplo, a variável será dividida em 3 categorias: sem chuva (precipitação até $0,1$), chuva fraca (precipitação maior que $0,1$ e menor que $10$) e chuva forte.
+
+```{r}
+
+# Discretization of the variable
+quantiles <- quantile(dados$Precipitacao,
+    probs = seq(0.7, 0.9, length.out = 3)
+)
+
+breaks <- c(-Inf, 0.001, quantiles, Inf)
+
+state_labels <- factor(
+    c(
+        "sem chuva",
+        "garoa",
+        "chuva fraca",
+        "chuva moderada",
+        "chuva forte"
+    ),
+    levels = c(
+        "sem chuva",
+        "garoa",
+        "chuva fraca",
+        "chuva moderada",
+        "chuva forte"
+    )
+)
+
+# Discretization
+dados <-
+    dados |>
+    # Discretization
+    mutate(rain_status = cut(Precipitacao,
+        breaks = breaks,
+        labels = state_labels
+    ))
+
+
+
+```
+
+Para esse exemplo, serão separadas as 10 últimas observações para avaliar as estimações.
+
+```{r}
+dados_teste <- tail(dados, 10)
+dados_treinamento <- dados[1:(nrow(dados) - 10), ]
+```
+
+Para estimar as transições de estado, é necessário criar uma variável que identifique o estado atual e o estado seguinte. Para isso, é necessário criar uma variável defasada, que pode ser feita com a função `lag()` do pacote `dplyr`. Depois disso, basta avaliar as proporções das transições de estado.
+
+```{r}
+# Creating the lagged variable
+transicoes_chuva <-
+    dados_treinamento |>
+    # Lag variable
+    mutate(rain_status_lag = lag(rain_status)) |>
+    # Exclude the last state
+    filter(!is.na(rain_status_lag)) |>
+    # Count the transitions
+    count(rain_status, rain_status_lag) |>
+    # Calculates the estimator
+    mutate(
+        Prop = round(n / sum(n), digits = 3),
+        .by = rain_status
+    )
+
+
+```
+
+
+
+A matriz de transição estimada entre os estados `r str_c(state_labels, collapse = ", ")`, nesta ordem, é dada por:
+
+\begin{equation}
+P =
+\begin{pmatrix}
+`r transicoes_chuva$Prop[1]` & `r  transicoes_chuva$Prop[2]` &  `r transicoes_chuva$Prop[3]` & `r  transicoes_chuva$Prop[4]` &  `r transicoes_chuva$Prop[5]` \\
+`r transicoes_chuva$Prop[6]` & `r  transicoes_chuva$Prop[7]` &  `r transicoes_chuva$Prop[8]` & `r  transicoes_chuva$Prop[9]` &  `r transicoes_chuva$Prop[10]` \\
+`r transicoes_chuva$Prop[11]` & `r  transicoes_chuva$Prop[12]` &  `r transicoes_chuva$Prop[13]` & `r  transicoes_chuva$Prop[14]` &  `r transicoes_chuva$Prop[15]` \\
+`r transicoes_chuva$Prop[16]` & `r  transicoes_chuva$Prop[17]` &  `r transicoes_chuva$Prop[18]` & `r  transicoes_chuva$Prop[19]` &  `r transicoes_chuva$Prop[20]` \\
+`r transicoes_chuva$Prop[21]` & `r  transicoes_chuva$Prop[22]` &  `r transicoes_chuva$Prop[23]` & `r  transicoes_chuva$Prop[24]` &  `r transicoes_chuva$Prop[25]` 
+\end{pmatrix}
+\end{equation} 
+
+
+Agora, pode-se recuperar a matriz de transição para fazer as estimativas de transição de estado.
+
+```{r}
+# Transition matrix
+matriz_transicao <-
+    transicoes_chuva |>
+    select(-n) |>
+    pivot_wider(
+        names_from = rain_status_lag,
+        values_from = Prop
+    ) |>
+    column_to_rownames("rain_status") |>
+    as.matrix()
+
+ultimo_estado <- dados_treinamento |>
+    tail(1) |>
+    pull(rain_status)
+
+
+```
+
+
+Com a matriz de transição, basta considerar o último estado dos dados (`r ultimo_estado`) ---- consequência da propriedade de Markov ---- de treinamento para fazer as estimativas de transição de estado.
+
+
+```{r}
+simula_cadeia_markov <- function(n = 10,
+                                 valor_inicial,
+                                 matriz_transicao,
+                                 estados) {
+    P <- matriz_transicao
+    y <- valor_inicial
+
+    # Simulation of the stochastic process
+    for (i in 1:n) {
+        # Sample of the next state
+        y[i + 1] <- sample(estados, size = 1, prob = P[y[i], ])
+    }
+
+    return(y[-1])
+}
+# Excecution of the function
+previsoes <- simula_cadeia_markov(
+    valor_inicial = ultimo_estado,
+    matriz_transicao = matriz_transicao,
+    estados = state_labels,
+    n = 10
+)
+```
+
+
+E, então, pode-se comparar as previsões com os dados de teste. Para o gráfico, os acertos são indicados pela linha tracejada vermelha.
+
+```{r}
+comparacao <-
+    data.frame(
+        observado = dados_teste$rain_status,
+        previsao = previsoes
+    )
+
+# Imprime a tabela
+comparacao
+
+# Constroi o gráfico
+comparacao |>
+    ggplot(aes(x = observado, y = previsao)) +
+    geom_jitter(
+        size = 3, shape = 2,
+        width = 0.15, height = 0.15
+    ) +
+    geom_abline(
+        intercept = 0,
+        slope = 1,
+        color = "red",
+        linetype = "dashed"
+    ) +
+    theme_bw() +
+    labs(
+        x = "Observado",
+        y = "Previsão",
+        title = "Previsões vs. Observações"
+    )
+```

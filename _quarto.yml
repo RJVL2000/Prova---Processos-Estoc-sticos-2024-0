@@ -1,0 +1,27 @@
+project:
+  type: book
+
+book:
+  title: "Prova 2 de Processo Estocásticos"
+  subtitle: "Rafael de Acypreste (200060023) e Rafael Lira (190115858)"
+  author: "Professor Felipe Quintino"
+  chapters:
+    - index.qmd
+ 
+
+
+
+
+execute:
+  warning: false
+  echo: true
+  eval: true
+  message: false
+
+
+format:
+  PrettyPDF-pdf:
+    keep-tex: true
+
+
+

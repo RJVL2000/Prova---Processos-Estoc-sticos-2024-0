@@ -1,0 +1,183 @@
+# Atividade de simulação {.unnumbered}
+
+
+## Modelo teórico
+
+
+```{r}
+#| echo: false
+
+    # Load libraries
+
+library(ggplot2)
+library(stringr)
+library(dplyr)
+ 
+```
+
+Para a matriz de transição formada por 
+
+
+\begin{equation}
+P =
+\begin{pmatrix}
+0.3 & 0.7 \\
+0.5 & 0.5 
+\end{pmatrix}
+\end{equation} e com a seguinte distribuição inicial:
+
+\begin{equation}
+\alpha =
+\begin{pmatrix}
+0.2 & 0.8 
+\end{pmatrix}
+\end{equation} que pode ser construído conforme:
+
+
+```{r}
+    # Setting seed
+set.seed(1234)
+
+    # State space
+S = c("a", "b")
+
+    # Transition matrix
+P = matrix(c(0.3, 0.7, 0.5, 0.5),
+           nrow  = 2,
+           byrow = T)
+
+    # Initial distribution
+alpha=c(0.2, 0.8)
+
+```
+
+
+Esse processo pode ser simulado conforme o código abaixo.
+
+
+```{r}
+    # First state simulation (vector creation)
+x  <-  sample(S,
+              size = 1,
+              prob = alpha)
+
+    # Number of simulations
+n <- 100000 
+
+    # Simulation of the stochastic process
+for (i in 1:n) {
+  
+    # Identifies the line of the transition matrix
+  linha = ifelse(x[i] == "a", 1, 2) 
+  
+    # Probabilities of transition
+  prob_transicao = P[linha, ]
+
+    # Sample of the next state
+  x[i + 1] = sample(S,
+                    size = 1,
+                    prob = prob_transicao)
+
+  }
+
+
+```
+
+Cuja matriz de distribuição pode ser estimada conforme a proporção de cada transição de estado no vetor `x`. Da mesma forma ao processo, as linhas da matriz devem somar 1.
+
+```{r}
+    # Estimation of the transition matrix
+probab_transitions <- 
+    # Identifies the transitions
+purrr::map2_chr(x[-length(x)], x[-1], paste0) |> 
+    # Counts the transitions
+ table() |>
+ as.data.frame()  |> 
+    # Identifies the initial state
+ mutate(i = ifelse(str_detect(Var1, "^a"), "a", "b")) |> 
+    # Calculates the estimator
+ mutate(Estimator = round(Freq / sum(Freq), 
+                          digits = 3), 
+        .by = i) |> 
+ select(Transitions = Var1,
+        Estimator)
+
+
+```
+
+Cuja matriz estimada se dá por:
+
+\begin{equation}
+P =
+\begin{pmatrix}
+`r probab_transitions$Estimator[1]` & `r probab_transitions$Estimator[2]` \\
+`r probab_transitions$Estimator[3]` & `r probab_transitions$Estimator[4]` 
+\end{pmatrix}
+\end{equation} que é bem próxima à matriz original.
+
+
+
+
+
+## Aplicação ao modelo empírico
+
+Trata-se de um modelo para avaliar as probabilidades de transição entre os estados de precipitação de chuvas.
+
+```{r}
+getwd()
+
+    # Importing data
+data <- 
+read.delim("dados.txt",
+           header = TRUE,
+           sep    = ";") |> 
+           select(-X) |> 
+           filter(!is.na(Precipitacao)) 
+
+    # Summary statistics
+data$Precipitacao |> summary()
+```
+
+O primeiro passo é discretizar a variável de precipitação, que é feita com a função `cut()` do pacote `base`. Para esse exemplo, a variável será dividida em 3 categorias: sem chuva (precipitação até $0,1$), chuva fraca (precipitação maior que $0,1$ e menor que $10$) e chuva forte.
+
+```{r}
+    # Discretization of the variable
+data <-
+    data |> 
+        # Discretization
+    mutate(rain_status = cut(Precipitacao,
+                             breaks = c(-Inf, 0.1, 10, Inf),
+                             labels = c("sem chuva",
+                                        "chuva fraca",
+                                        "chuva forte"))) 
+
+```
+
+
+Para estimar as transições de estado, é necessário criar uma variável que identifique o estado atual e o estado seguinte. Para isso, é necessário criar uma variável defasada, que pode ser feita com a função `lag()` do pacote `dplyr`. Depois disso, basta avaliar as proporções das transições de estado.
+
+```{r}
+    # Creating the lagged variable
+rain_transitions <- 
+data |> 
+        # Lag variable
+    mutate(rain_status_lag = lag(rain_status))  |> 
+        # Exclude the last state 
+    filter(!is.na(rain_status_lag)) |>
+        # Count the transitions
+    count(rain_status, rain_status_lag) |> 
+        # Calculates the estimator
+    mutate(Prop = round(n / sum(n), digits = 3),
+           .by = rain_status) 
+```
+
+A matriz de transição estimada entre os estados `r str_c(unique(data$rain_status), collapse = ", ")`, nesta ordem, é dada por:
+
+\begin{equation}
+P =
+\begin{pmatrix}
+`r rain_transitions$Prop[1]` & `r  rain_transitions$Prop[2]` &  `r rain_transitions$Prop[3]` \\
+`r rain_transitions$Prop[4]` & `r  rain_transitions$Prop[5]` &  `r rain_transitions$Prop[6]` \\
+`r rain_transitions$Prop[7]` & `r  rain_transitions$Prop[8]` &  `r rain_transitions$Prop[9]` 
+\end{pmatrix}
+\end{equation} 

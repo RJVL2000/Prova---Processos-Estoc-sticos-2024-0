@@ -9,6 +9,7 @@
   numbers=noendperiod]{scrreprt}
 
 \usepackage{amsmath,amssymb}
+\usepackage{lmodern}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
@@ -18,10 +19,6 @@
   \usepackage{unicode-math}
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
-\fi
-\usepackage{lmodern}
-\ifPDFTeX\else  
-    % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -245,13 +242,10 @@
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
 \makeatletter
-\@ifpackageloaded{tcolorbox}{}{\usepackage[skins,breakable]{tcolorbox}}
+\@ifpackageloaded{tcolorbox}{}{\usepackage[many]{tcolorbox}}
 \makeatother
 \makeatletter
-\@ifundefined{shadecolor}{\definecolor{shadecolor}{rgb}{.97, .97, .97}}
-\makeatother
-\makeatletter
-\@ifundefined{codebgcolor}{\definecolor{codebgcolor}{named}{light}}
+\@ifundefined{shadecolor}{\definecolor{shadecolor}{named}{light}}
 \makeatother
 \makeatletter
 \makeatother
@@ -286,7 +280,7 @@
 \maketitle
 \pagestyle{mystyle}
 
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[sharp corners, breakable, borderline west={3pt}{0pt}{shadecolor}, frame hidden, colback={codebgcolor}, enhanced, boxrule=0pt]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, enhanced, breakable, colback={shadecolor}, frame hidden]}{\end{tcolorbox}}\fi
 
 \bookmarksetup{startatroot}
 
@@ -530,7 +524,7 @@ gráfico, os acertos são indicados pela linha tracejada vermelha.
 
 \begin{figure}[H]
 
-{\centering \includegraphics{index_files/figure-pdf/unnamed-chunk-8-1.pdf}
+{\centering \includegraphics{./index_files/figure-pdf/unnamed-chunk-8-1.pdf}
 
 }
 
@@ -544,7 +538,91 @@ gráfico, os acertos são indicados pela linha tracejada vermelha.
 
 \markboth{Questão 2}{Questão 2}
 
-Espaço para a resposta da questão 2
+\hypertarget{aplicauxe7uxe3o-ao-modelo-empuxedrico-1}{%
+\section*{Aplicação ao modelo
+empírico}\label{aplicauxe7uxe3o-ao-modelo-empuxedrico-1}}
+\addcontentsline{toc}{section}{Aplicação ao modelo empírico}
+
+\markright{Aplicação ao modelo empírico}
+
+Trata-se de um modelo para avaliar o comportamento dos preços de
+fechamentos dos valores das ações do BBAS3 no ano de 2023.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Define the stock symbol and specify the start and end dates}
+\NormalTok{stock\_symbol }\OtherTok{\textless{}{-}} \StringTok{"BBAS3.SA"}
+\NormalTok{start\_date }\OtherTok{\textless{}{-}} \StringTok{"2023{-}01{-}01"}
+\NormalTok{end\_date }\OtherTok{\textless{}{-}} \StringTok{"2024{-}01{-}01"}
+
+\CommentTok{\# Use getSymbols to fetch historical stock data}
+\FunctionTok{getSymbols}\NormalTok{(stock\_symbol,}
+    \AttributeTok{src =} \StringTok{"yahoo"}\NormalTok{,}
+    \AttributeTok{from =}\NormalTok{ start\_date,}
+    \AttributeTok{to =}\NormalTok{ end\_date}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] "BBAS3.SA"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check the loaded data and get the closing values}
+\NormalTok{stock\_data }\OtherTok{\textless{}{-}} \FunctionTok{Cl}\NormalTok{(}\FunctionTok{get}\NormalTok{(stock\_symbol))}
+
+\CommentTok{\# Summary statistics}
+\NormalTok{stock\_data}\SpecialCharTok{$}\NormalTok{BBAS3.SA.Close }\SpecialCharTok{|\textgreater{}} \FunctionTok{summary}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+     Index            BBAS3.SA.Close 
+ Min.   :2023-01-02   Min.   :32.64  
+ 1st Qu.:2023-03-30   1st Qu.:40.78  
+ Median :2023-07-01   Median :47.00  
+ Mean   :2023-06-30   Mean   :45.49  
+ 3rd Qu.:2023-09-27   3rd Qu.:49.07  
+ Max.   :2023-12-28   Max.   :55.39  
+\end{verbatim}
+
+Obtendo o número de observações no vetor de valores da ação, é possível
+gerar simulações do movimento Browniano e do processo de Poisson com a
+mesma quantidade de pontos que a base de dados. Considerando um
+intervalo de 0 a 1, em anos, é gerado um vetor \emph{t} relativo ao
+tempo decorrido do início da contagem ao momento de cada observação.
+Para simular o movimento Browniano, basta fazer a soma cumulativa de
+\emph{n} valores da distribuição Normal padrão, enquanto para o processo
+de Poisson é feita a soma de valores da distribuição Poisson com
+parâmetro \(\lambda=1/n\).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(stock\_data)}
+\NormalTok{t }\OtherTok{\textless{}{-}} \FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{, }\AttributeTok{length.out =}\NormalTok{ n)}
+\NormalTok{B }\OtherTok{\textless{}{-}} \FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(n))}
+\NormalTok{N }\OtherTok{\textless{}{-}} \FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rpois}\NormalTok{(n, }\DecValTok{1} \SpecialCharTok{/}\NormalTok{ n))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{simulate\_Xtk }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(timeline, history, theta, csi\_tk) \{}
+    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{length}\NormalTok{(timeline) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(history)) \{}
+        \FunctionTok{print}\NormalTok{(}\StringTok{"The timeline and the history vector must have the same length."}\NormalTok{)}
+        \FunctionTok{return}\NormalTok{()}
+\NormalTok{    \}}
+\NormalTok{    tj }\OtherTok{\textless{}{-}}\NormalTok{ timeline[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
+\NormalTok{    tj\_1 }\OtherTok{\textless{}{-}}\NormalTok{ timeline[}\SpecialCharTok{{-}}\FunctionTok{length}\NormalTok{(timeline)]}
+\NormalTok{    Xtj }\OtherTok{\textless{}{-}}\NormalTok{ history[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
+\NormalTok{    Xtk\_1 }\OtherTok{\textless{}{-}}\NormalTok{ history[}\FunctionTok{length}\NormalTok{(history)]}
+    \FunctionTok{return}\NormalTok{(X\_tk }\OtherTok{\textless{}{-}}\NormalTok{ Xtk\_1 }\SpecialCharTok{{-}}\NormalTok{ theta }\SpecialCharTok{*} \FunctionTok{sum}\NormalTok{(Xtj }\SpecialCharTok{*}\NormalTok{ (tj }\SpecialCharTok{{-}}\NormalTok{ tj\_1)) }\SpecialCharTok{+}\NormalTok{ csi\_tk)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
 
 
 

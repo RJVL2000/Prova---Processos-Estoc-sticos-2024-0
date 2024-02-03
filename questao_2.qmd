@@ -1,3 +1,59 @@
 # Questão 2 {.unnumbered}
 
-Espaço para a resposta da questão 2
+```{r}
+#| echo: false
+
+# Load libraries
+pacman::p_load(quantmod, ggplot2)
+
+# Set seed
+set.seed(12345)
+```
+
+## Aplicação ao modelo empírico
+
+Trata-se de um modelo para avaliar o comportamento dos preços de fechamentos dos valores das ações do BBAS3 no ano de 2023.
+
+```{r}
+# Define the stock symbol and specify the start and end dates
+stock_symbol <- "BBAS3.SA"
+start_date <- "2023-01-01"
+end_date <- "2024-01-01"
+
+# Use getSymbols to fetch historical stock data
+getSymbols(stock_symbol,
+    src = "yahoo",
+    from = start_date,
+    to = end_date
+)
+
+# Check the loaded data and get the closing values
+stock_data <- Cl(get(stock_symbol))
+
+# Summary statistics
+stock_data$BBAS3.SA.Close |> summary()
+```
+
+Obtendo o número de observações no vetor de valores da ação, é possível gerar simulações do movimento Browniano e do processo de Poisson com a mesma quantidade de pontos que a base de dados. Considerando um intervalo de 0 a 1, em anos, é gerado um vetor *t* relativo ao tempo decorrido do início da contagem ao momento de cada observação. Para simular o movimento Browniano, basta fazer a soma cumulativa de *n* valores da distribuição Normal padrão, enquanto para o processo de Poisson é feita a soma de valores da distribuição Poisson com parâmetro $\lambda=1/n$.
+
+```{r}
+n <- nrow(stock_data)
+t <- seq(0, 1, length.out = n)
+B <- cumsum(rnorm(n))
+N <- cumsum(rpois(n, 1 / n))
+```
+
+
+```{r}
+simulate_Xtk <- function(timeline, history, theta, csi_tk) {
+    if (length(timeline) != length(history)) {
+        print("The timeline and the history vector must have the same length.")
+        return()
+    }
+    tj <- timeline[-1]
+    tj_1 <- timeline[-length(timeline)]
+    Xtj <- history[-1]
+    Xtk_1 <- history[length(history)]
+    return(X_tk <- Xtk_1 - theta * sum(Xtj * (tj - tj_1)) + csi_tk)
+}
+```

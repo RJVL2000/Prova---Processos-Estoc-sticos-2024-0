@@ -9,7 +9,6 @@
   numbers=noendperiod]{scrreprt}
 
 \usepackage{amsmath,amssymb}
-\usepackage{lmodern}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
@@ -19,6 +18,10 @@
   \usepackage{unicode-math}
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else  
+    % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -242,10 +245,13 @@
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
 \makeatletter
-\@ifpackageloaded{tcolorbox}{}{\usepackage[many]{tcolorbox}}
+\@ifpackageloaded{tcolorbox}{}{\usepackage[skins,breakable]{tcolorbox}}
 \makeatother
 \makeatletter
-\@ifundefined{shadecolor}{\definecolor{shadecolor}{named}{light}}
+\@ifundefined{shadecolor}{\definecolor{shadecolor}{rgb}{.97, .97, .97}}
+\makeatother
+\makeatletter
+\@ifundefined{codebgcolor}{\definecolor{codebgcolor}{named}{light}}
 \makeatother
 \makeatletter
 \makeatother
@@ -280,7 +286,7 @@
 \maketitle
 \pagestyle{mystyle}
 
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, breakable, frame hidden, enhanced, colback={shadecolor}]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[sharp corners, breakable, borderline west={3pt}{0pt}{shadecolor}, frame hidden, colback={codebgcolor}, enhanced, boxrule=0pt]}{\end{tcolorbox}}\fi
 
 \bookmarksetup{startatroot}
 
@@ -524,11 +530,21 @@ gráfico, os acertos são indicados pela linha tracejada vermelha.
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./index_files/figure-pdf/unnamed-chunk-8-1.pdf}
+{\centering \includegraphics{index_files/figure-pdf/unnamed-chunk-8-1.pdf}
 
 }
 
 \end{figure}
+
+\bookmarksetup{startatroot}
+
+\hypertarget{questuxe3o-2}{%
+\chapter*{Questão 2}\label{questuxe3o-2}}
+\addcontentsline{toc}{chapter}{Questão 2}
+
+\markboth{Questão 2}{Questão 2}
+
+Espaço para a resposta da questão 2
 
 
 

@@ -7,6 +7,7 @@ book:
   author: "Professor Felipe Quintino"
   chapters:
     - index.qmd
+    - questao_2.qmd
  
 
 

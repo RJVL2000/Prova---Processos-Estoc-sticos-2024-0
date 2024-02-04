@@ -28,32 +28,75 @@ getSymbols(stock_symbol,
 )
 
 # Check the loaded data and get the closing values
-stock_data <- Cl(get(stock_symbol))
+stock_values <- as.vector(Cl(get(stock_symbol)))
 
 # Summary statistics
-stock_data$BBAS3.SA.Close |> summary()
+summary(stock_values)
 ```
 
 Obtendo o número de observações no vetor de valores da ação, é possível gerar simulações do movimento Browniano e do processo de Poisson com a mesma quantidade de pontos que a base de dados. Considerando um intervalo de 0 a 1, em anos, é gerado um vetor *t* relativo ao tempo decorrido do início da contagem ao momento de cada observação. Para simular o movimento Browniano, basta fazer a soma cumulativa de *n* valores da distribuição Normal padrão, enquanto para o processo de Poisson é feita a soma de valores da distribuição Poisson com parâmetro $\lambda=1/n$.
 
 ```{r}
-n <- nrow(stock_data)
-t <- seq(0, 1, length.out = n)
-B <- cumsum(rnorm(n))
-N <- cumsum(rpois(n, 1 / n))
+n <- length(stock_values) - 1
+t <- seq(0, 1, length.out = n + 1)
+B <- c(0, cumsum(rnorm(n)))
+N <- c(0, cumsum(rpois(n, 1 / n)))
 ```
+
+Em seguida, é criada uma função para prever a k-ésima observação do modelo, usando os tempos, o histórico do processo, o parâmetro $\theta$ e o valor do processo $\xi(t_{k})$
+
+```{r}
+simulate_Xtk <- function(t, X, theta, csi) {
+    timeline <- as.vector(t)
+    history <- as.vector(X)
+    csi <- as.vector(csi)
+    if (length(timeline) != length(history) ||
+        length(timeline) != length(csi) ||
+        length(history) != length(csi)) {
+        print("The timeline, the history and the csi vector must have the same length.")
+        return()
+    }
+    n <- length(timeline)
+
+    tj <- timeline[-1]
+    tj_1 <- timeline[-n]
+    Xtj <- history[-1]
+    fatork <- Xtj * (tj - tj_1)
+    sumk <- cumsum(fatork)
+    Xtk <- Xtj - theta * sumk + csi[-1]
+    return(Xtk)
+}
+```
+
+Para estimar o parâmetro $\theta$ por meio do método dos mínimos quadrados, é criada uma função que recebe os mesmos inputs da função de simulação, porém retornando a soma de quadrados do resíduo.
+
+```{r}
+least_squares <- function(t, X, theta, csi) {
+    observed_values <- X[-1]
+    predicted_values <- simulate_Xtk(t, X, theta, csi)
+
+    return(sum((observed_values - predicted_values)^2))
+}
+```
+
+Utilizando a função *optim*, e escolhendo um valor inicial inicial para $\theta$, é possível encontrar o ponto onde a soma de quadrados é mínima. Assim, são gerados os estimadores para cada o movimento Browniano e para o processo de Poisson.
 
 
 ```{r}
-simulate_Xtk <- function(timeline, history, theta, csi_tk) {
-    if (length(timeline) != length(history)) {
-        print("The timeline and the history vector must have the same length.")
-        return()
-    }
-    tj <- timeline[-1]
-    tj_1 <- timeline[-length(timeline)]
-    Xtj <- history[-1]
-    Xtk_1 <- history[length(history)]
-    return(X_tk <- Xtk_1 - theta * sum(Xtj * (tj - tj_1)) + csi_tk)
-}
+initial_theta <- 1
+
+(estim_theta_browniano <- optim(
+    par = initial_theta,
+    fn = least_squares,
+    X = stock_values,
+    t = t,
+    csi = B ## Trajetória do movimento Browniano
+)$par)
+(estim_theta_poisson <- optim(
+    par = initial_theta,
+    fn = least_squares,
+    X = stock_values,
+    t = t,
+    csi = N ## Trajetória do processo de Poisson
+)$par)
 ```

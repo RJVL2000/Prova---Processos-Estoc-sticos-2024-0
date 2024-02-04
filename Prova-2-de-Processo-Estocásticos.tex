@@ -280,7 +280,7 @@
 \maketitle
 \pagestyle{mystyle}
 
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, enhanced, breakable, colback={shadecolor}, frame hidden]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, breakable, enhanced, colback={shadecolor}, frame hidden]}{\end{tcolorbox}}\fi
 
 \bookmarksetup{startatroot}
 
@@ -571,21 +571,16 @@ fechamentos dos valores das ações do BBAS3 no ano de 2023.
 \begin{Shaded}
 \begin{Highlighting}[]
 \CommentTok{\# Check the loaded data and get the closing values}
-\NormalTok{stock\_data }\OtherTok{\textless{}{-}} \FunctionTok{Cl}\NormalTok{(}\FunctionTok{get}\NormalTok{(stock\_symbol))}
+\NormalTok{stock\_values }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(}\FunctionTok{Cl}\NormalTok{(}\FunctionTok{get}\NormalTok{(stock\_symbol)))}
 
 \CommentTok{\# Summary statistics}
-\NormalTok{stock\_data}\SpecialCharTok{$}\NormalTok{BBAS3.SA.Close }\SpecialCharTok{|\textgreater{}} \FunctionTok{summary}\NormalTok{()}
+\FunctionTok{summary}\NormalTok{(stock\_values)}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-     Index            BBAS3.SA.Close 
- Min.   :2023-01-02   Min.   :32.64  
- 1st Qu.:2023-03-30   1st Qu.:40.78  
- Median :2023-07-01   Median :47.00  
- Mean   :2023-06-30   Mean   :45.49  
- 3rd Qu.:2023-09-27   3rd Qu.:49.07  
- Max.   :2023-12-28   Max.   :55.39  
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  32.64   40.78   47.00   45.49   49.07   55.39 
 \end{verbatim}
 
 Obtendo o número de observações no vetor de valores da ação, é possível
@@ -600,29 +595,95 @@ parâmetro \(\lambda=1/n\).
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{n }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(stock\_data)}
-\NormalTok{t }\OtherTok{\textless{}{-}} \FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{, }\AttributeTok{length.out =}\NormalTok{ n)}
-\NormalTok{B }\OtherTok{\textless{}{-}} \FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(n))}
-\NormalTok{N }\OtherTok{\textless{}{-}} \FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rpois}\NormalTok{(n, }\DecValTok{1} \SpecialCharTok{/}\NormalTok{ n))}
+\NormalTok{n }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(stock\_values) }\SpecialCharTok{{-}} \DecValTok{1}
+\NormalTok{t }\OtherTok{\textless{}{-}} \FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{, }\AttributeTok{length.out =}\NormalTok{ n }\SpecialCharTok{+} \DecValTok{1}\NormalTok{)}
+\NormalTok{B }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(n)))}
+\NormalTok{N }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rpois}\NormalTok{(n, }\DecValTok{1} \SpecialCharTok{/}\NormalTok{ n)))}
 \end{Highlighting}
 \end{Shaded}
 
+Em seguida, é criada uma função para prever a k-ésima observação do
+modelo, usando os tempos, o histórico do processo, o parâmetro
+\(\theta\) e o valor do processo \(\xi(t_{k})\)
+
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{simulate\_Xtk }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(timeline, history, theta, csi\_tk) \{}
-    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{length}\NormalTok{(timeline) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(history)) \{}
-        \FunctionTok{print}\NormalTok{(}\StringTok{"The timeline and the history vector must have the same length."}\NormalTok{)}
+\NormalTok{simulate\_Xtk }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(t, X, theta, csi) \{}
+\NormalTok{    timeline }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(t)}
+\NormalTok{    history }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(X)}
+\NormalTok{    csi }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(csi)}
+    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{length}\NormalTok{(timeline) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(history) }\SpecialCharTok{||}
+        \FunctionTok{length}\NormalTok{(timeline) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(csi) }\SpecialCharTok{||}
+        \FunctionTok{length}\NormalTok{(history) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(csi)) \{}
+        \FunctionTok{print}\NormalTok{(}\StringTok{"The timeline, the history and the csi vector must have the same length."}\NormalTok{)}
         \FunctionTok{return}\NormalTok{()}
 \NormalTok{    \}}
+\NormalTok{    n }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(timeline)}
+
 \NormalTok{    tj }\OtherTok{\textless{}{-}}\NormalTok{ timeline[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
-\NormalTok{    tj\_1 }\OtherTok{\textless{}{-}}\NormalTok{ timeline[}\SpecialCharTok{{-}}\FunctionTok{length}\NormalTok{(timeline)]}
+\NormalTok{    tj\_1 }\OtherTok{\textless{}{-}}\NormalTok{ timeline[}\SpecialCharTok{{-}}\NormalTok{n]}
 \NormalTok{    Xtj }\OtherTok{\textless{}{-}}\NormalTok{ history[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
-\NormalTok{    Xtk\_1 }\OtherTok{\textless{}{-}}\NormalTok{ history[}\FunctionTok{length}\NormalTok{(history)]}
-    \FunctionTok{return}\NormalTok{(X\_tk }\OtherTok{\textless{}{-}}\NormalTok{ Xtk\_1 }\SpecialCharTok{{-}}\NormalTok{ theta }\SpecialCharTok{*} \FunctionTok{sum}\NormalTok{(Xtj }\SpecialCharTok{*}\NormalTok{ (tj }\SpecialCharTok{{-}}\NormalTok{ tj\_1)) }\SpecialCharTok{+}\NormalTok{ csi\_tk)}
+\NormalTok{    fatork }\OtherTok{\textless{}{-}}\NormalTok{ Xtj }\SpecialCharTok{*}\NormalTok{ (tj }\SpecialCharTok{{-}}\NormalTok{ tj\_1)}
+\NormalTok{    sumk }\OtherTok{\textless{}{-}} \FunctionTok{cumsum}\NormalTok{(fatork)}
+\NormalTok{    Xtk }\OtherTok{\textless{}{-}}\NormalTok{ Xtj }\SpecialCharTok{{-}}\NormalTok{ theta }\SpecialCharTok{*}\NormalTok{ sumk }\SpecialCharTok{+}\NormalTok{ csi[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
+    \FunctionTok{return}\NormalTok{(Xtk)}
 \NormalTok{\}}
 \end{Highlighting}
 \end{Shaded}
 
+Para estimar o parâmetro \(\theta\) por meio do método dos mínimos
+quadrados, é criada uma função que recebe os mesmos inputs da função de
+simulação, porém retornando a soma de quadrados do resíduo.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{least\_squares }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(t, X, theta, csi) \{}
+\NormalTok{    observed\_values }\OtherTok{\textless{}{-}}\NormalTok{ X[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
+\NormalTok{    predicted\_values }\OtherTok{\textless{}{-}} \FunctionTok{simulate\_Xtk}\NormalTok{(t, X, theta, csi)}
+
+    \FunctionTok{return}\NormalTok{(}\FunctionTok{sum}\NormalTok{((observed\_values }\SpecialCharTok{{-}}\NormalTok{ predicted\_values)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{))}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+Utilizando a função \emph{optim}, e escolhendo um valor inicial inicial
+para \(\theta\), é possível encontrar o ponto onde a soma de quadrados é
+mínima. Assim, são gerados os estimadores para cada o movimento
+Browniano e para o processo de Poisson.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{initial\_theta }\OtherTok{\textless{}{-}} \DecValTok{1}
+
+\NormalTok{(estim\_theta\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{optim}\NormalTok{(}
+    \AttributeTok{par =}\NormalTok{ initial\_theta,}
+    \AttributeTok{fn =}\NormalTok{ least\_squares,}
+    \AttributeTok{X =}\NormalTok{ stock\_values,}
+    \AttributeTok{t =}\NormalTok{ t,}
+    \AttributeTok{csi =}\NormalTok{ B }\DocumentationTok{\#\# Trajetória do movimento Browniano}
+\NormalTok{)}\SpecialCharTok{$}\NormalTok{par)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 0.8238281
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{(estim\_theta\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{optim}\NormalTok{(}
+    \AttributeTok{par =}\NormalTok{ initial\_theta,}
+    \AttributeTok{fn =}\NormalTok{ least\_squares,}
+    \AttributeTok{X =}\NormalTok{ stock\_values,}
+    \AttributeTok{t =}\NormalTok{ t,}
+    \AttributeTok{csi =}\NormalTok{ N }\DocumentationTok{\#\# Trajetória do processo de Poisson}
+\NormalTok{)}\SpecialCharTok{$}\NormalTok{par)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] -8.881784e-16
+\end{verbatim}
 
 
 

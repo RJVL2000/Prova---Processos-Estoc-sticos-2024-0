@@ -147,15 +147,25 @@ X_prev_poisson_compensated <-
 residuo_browniano <- stock_values[-1] - X_prev_browniano
 shapiro.test(residuo_browniano)
 hist(residuo_browniano)
+qqnorm(residuo_browniano)
+qqline(residuo_browniano)
 
 residuo_poisson <- stock_values[-1] - X_prev_poisson
 shapiro.test(residuo_poisson)
 hist(residuo_poisson)
+qqnorm(residuo_poisson)
+qqline(residuo_poisson)
+
 
 
 residuo_poisson_compensated <- stock_values[-1] - X_prev_poisson_compensated
 shapiro.test(residuo_poisson_compensated)
 hist(residuo_poisson_compensated)
+qqnorm(residuo_poisson_compensated)
+qqline(residuo_poisson_compensated)
+```
+
+```{r}
 ```
 
 ```{r}
@@ -240,6 +250,8 @@ n_valid <- length(stock_values_valid) - 1
 t_valid <- seq(0, 1, length.out = n_valid + 1)
 N_valid_browniano <- c(0, cumsum(rnorm(n_valid, mean = 0, sd = 1)))
 N_valid_poisson <- c(0, cumsum(rpois(n_valid, 1)))
+N_valid_poisson_compenstated <- c(0, cumsum(rpois(n_valid, 1)) - 
+                                  seq(1, n_valid, by = 1))
 ```
 
 
@@ -253,13 +265,23 @@ X_prev_valid_poisson <- simulate_Xtk(t_valid,
                                      estim_theta_poisson,
                                      N_valid_poisson)
 
+X_prev_valid_poisson_compensated <- 
+    simulate_Xtk(t_valid,
+                 stock_values_valid,
+                 estim_theta_poisson_compensated,
+                 N_valid_poisson_compenstated)                                     
+
 dados_valid <- data.frame(
     t = t_valid[-1],
     X = stock_values_valid[-1],
     X_prev_valid_browniano = X_prev_valid_browniano,
-    X_prev_valid_poisson = X_prev_valid_poisson
+    X_prev_valid_poisson = X_prev_valid_poisson,
+    X_prev_valid_poisson_compensated = X_prev_valid_poisson_compensated
 ) |> 
-pivot_longer(cols = c(X, X_prev_valid_browniano, X_prev_valid_poisson),
+pivot_longer(cols = c(X,
+                      X_prev_valid_browniano,
+                      X_prev_valid_poisson,
+                      X_prev_valid_poisson_compensated),
              names_to = "Variavel",
              values_to = "Valor") 
 ```
@@ -267,7 +289,7 @@ pivot_longer(cols = c(X, X_prev_valid_browniano, X_prev_valid_poisson),
 
 ```{r}
 dados_valid |>
-    filter(Variavel != "X_prev_valid_poisson") |>
+    filter(Variavel %in% c("X", "X_prev_valid_browniano")) |>
     ggplot() +
     geom_line(aes(x = t, y = Valor, color = Variavel)) +
     labs(x = "Tempo",

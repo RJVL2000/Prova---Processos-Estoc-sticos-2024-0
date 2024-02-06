@@ -1,3 +1,8 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 # Questão 2 Acypreste {.unnumbered}
 
 ```{r}
@@ -41,7 +46,9 @@ n <- length(stock_values) - 1
 t <- seq(0, 1, length.out = n + 1)
 B <- c(0, cumsum(rnorm(n, mean = 0, sd = 1)))
 N <- c(0, cumsum(rpois(n, lambda = 1)))
+N_compensated <- c(0, cumsum(rpois(n, lambda = 1)) - seq(1, n, by = 1))
 ```
+
 
 Em seguida, é criada uma função para prever a k-ésima observação do modelo, usando os tempos, o histórico do processo, o parâmetro $\theta$ e o valor do processo $\xi(t_{k})$
 
@@ -64,9 +71,25 @@ stop
     tj <- timeline[-1]
     tj_1 <- timeline[-n]
     Xtj_1 <- history[-n]
-    fatork <- Xtj_1 * (tj - tj_1)
-    sumk <- cumsum(fatork)
-    Xtk <- Xtj_1 - theta * sumk + csi[-1]
+    
+    fatork <- rep(0, n - 1)
+    Xtk <- rep(0, n - 1)
+    
+    
+    
+    for(j in 1:(n-1)){
+      
+    fatork[j] <- Xtj_1[j] * (tj[j] - tj_1[j])
+    
+    sumk <- cumsum(fatork[1:j])[j]
+
+    
+    Xtk[j] <- Xtj_1[j] - theta * sumk + csi[j]
+    
+ 
+    }
+    
+    
     return(Xtk)
 }
 ```
@@ -102,10 +125,24 @@ initial_theta <- 100
     t = t,
     csi = N ## Trajetória do processo de Poisson
 )$par)
+
+(estim_theta_poisson_compensated <- optim(
+    par = initial_theta,
+    fn = least_squares,
+    X = stock_values,
+    t = t,
+    csi = N_compensated ## Trajetória do processo de Poisson
+)$par)
+
 ```
+
 ```{r}
-X_prev_browniano <- simulate_Xtk(t, stock_values, estim_theta_browniano, B)
-X_prev_poisson <- simulate_Xtk(t, stock_values, estim_theta_poisson, N)
+X_prev_browniano <-
+  simulate_Xtk(t, stock_values, estim_theta_browniano, B)
+X_prev_poisson <-
+  simulate_Xtk(t, stock_values, estim_theta_poisson, N)
+X_prev_poisson_compensated <-
+  simulate_Xtk(t, stock_values, estim_theta_poisson_compensated, N_compensated)
 
 residuo_browniano <- stock_values[-1] - X_prev_browniano
 shapiro.test(residuo_browniano)
@@ -114,6 +151,11 @@ hist(residuo_browniano)
 residuo_poisson <- stock_values[-1] - X_prev_poisson
 shapiro.test(residuo_poisson)
 hist(residuo_poisson)
+
+
+residuo_poisson_compensated <- stock_values[-1] - X_prev_poisson_compensated
+shapiro.test(residuo_poisson_compensated)
+hist(residuo_poisson_compensated)
 ```
 
 ```{r}
@@ -121,9 +163,10 @@ dados_sim <- data.frame(
     t = t[-1],
     X = stock_values[-1 ],
     X_prev_browniano = X_prev_browniano,
-    X_prev_poisson = X_prev_poisson
+    X_prev_poisson = X_prev_poisson,
+    X_prev_poisson_compensated = X_prev_poisson_compensated
 ) |> 
-pivot_longer(cols = c(X, X_prev_browniano, X_prev_poisson),
+pivot_longer(cols = c(X, X_prev_browniano, X_prev_poisson, X_prev_poisson_compensated),
              names_to = "Variavel",
              values_to = "Valor") 
 ```
@@ -131,7 +174,7 @@ pivot_longer(cols = c(X, X_prev_browniano, X_prev_poisson),
 
 ```{r}
 dados_sim |> 
-    filter(Variavel != "X_prev_poisson") |> 
+    filter(Variavel %in% c("X", "X_prev_browniano")) |> 
     ggplot() +
     geom_line(aes(x = t, y = Valor, color = Variavel)) +
     labs(x = "Tempo",
@@ -144,7 +187,7 @@ dados_sim |>
 
 ```{r}
 dados_sim |>
-    filter(Variavel != "X_prev_browniano") |>
+    filter(Variavel %in% c("X", "X_prev_poisson")) |>
     ggplot() +
     geom_line(aes(x = t, y = Valor, color = Variavel)) +
     labs(x = "Tempo",
@@ -155,6 +198,19 @@ dados_sim |>
     theme_minimal()
 ```
 
+
+```{r}
+dados_sim |>
+    filter(Variavel  %in% c("X", "X_prev_poisson_compensated")) |>
+    ggplot() +
+    geom_line(aes(x = t, y = Valor, color = Variavel)) +
+    labs(x = "Tempo",
+         y = "Valor das ações do BBAS3",
+         color = NULL,
+         title = "Ajuste do modelo de processos de Poisson Compensado
+          aos dados de ações do BBAS3 em 2023") +
+    theme_minimal()
+```
 
 
 ## Previsão de valores de 2024

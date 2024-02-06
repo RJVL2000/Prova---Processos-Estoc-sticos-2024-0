@@ -60,10 +60,10 @@ simulate_Xtk <- function(t, X, theta, csi) {
 
     tj <- timeline[-1]
     tj_1 <- timeline[-n]
-    Xtj <- history[-1]
-    fatork <- Xtj * (tj - tj_1)
+    Xtj_1 <- history[-n]
+    fatork <- Xtj_1 * (tj - tj_1)
     sumk <- cumsum(fatork)
-    Xtk <- Xtj - theta * sumk + csi[-1]
+    Xtk <- Xtj_1 - theta * sumk + csi[-1]
     return(Xtk)
 }
 ```
@@ -83,7 +83,7 @@ Utilizando a função *optim*, e escolhendo um valor inicial inicial para $\thet
 
 
 ```{r}
-initial_theta <- 1
+initial_theta <- 100
 
 (estim_theta_browniano <- optim(
     par = initial_theta,
@@ -99,4 +99,93 @@ initial_theta <- 1
     t = t,
     csi = N ## Trajetória do processo de Poisson
 )$par)
+```
+
+```{r}
+X_prev_browniano <- simulate_Xtk(t, stock_values, estim_theta_browniano, B)
+X_prev_poisson <- simulate_Xtk(t, stock_values, estim_theta_poisson, N)
+
+residuo_browniano <- stock_values[-1] - X_prev_browniano
+shapiro.test(residuo_browniano)
+hist(residuo_browniano)
+
+residuo_poisson <- stock_values[-1] - X_prev_poisson
+shapiro.test(residuo_poisson)
+hist(residuo_poisson)
+```
+
+```{r}
+dados_sim <- data.frame(
+    t = t[-1],
+    X = stock_values[-1],
+    X_prev_browniano = X_prev_browniano,
+    X_prev_poisson = X_prev_poisson
+)
+```
+
+
+```{r}
+dados_sim |> ggplot() +
+    geom_line(aes(x = t, y = X, color = "X")) +
+    geom_line(aes(x = t, y = X_prev_browniano, color = "X Previsto Browniano")) +
+    labs(x = "Tempo", y = "Valor das ações do BBAS3", title = "Ajuste do modelo de movimento Browniano aos dados de ações do BBAS3 em 2023") +
+    theme_minimal()
+```
+
+```{r}
+dados_sim |> ggplot() +
+    geom_line(aes(x = t, y = X, color = "X")) +
+    geom_line(aes(x = t, y = X_prev_poisson, color = "X Previsto Poisson")) +
+    labs(x = "Tempo", y = "Valor das ações do BBAS3", title = "Ajuste do modelo de processos de Poisson aos dados de ações do BBAS3 em 2023") +
+    theme_minimal()
+```
+
+
+
+Previsão de valores de 2024
+
+```{r}
+# Define the stock symbol and specify the start and end dates
+start_date_valid <- "2024-01-01"
+end_date_valid <- "2024-01-15"
+
+# Use getSymbols to fetch historical stock data
+getSymbols(stock_symbol,
+    src = "yahoo",
+    from = start_date_valid,
+    to = end_date_valid
+)
+
+# Check the loaded data and get the closing values
+stock_values_valid <- as.vector(Cl(get(stock_symbol)))
+
+# Summary statistics
+summary(stock_values)
+```
+
+
+```{r}
+n_valid <- length(stock_values_valid) - 1
+t_valid <- seq(0, 1, length.out = n_valid + 1)
+N_valid <- c(0, cumsum(rpois(n_valid, 1 / n_valid)))
+```
+
+
+```{r}
+X_prev_valid <- simulate_Xtk(t_valid, stock_values_valid, estim_theta_poisson, N_valid)
+
+dados_valid <- data.frame(
+    t = t_valid[-1],
+    X = stock_values_valid[-1],
+    X_prev_valid = X_prev_valid
+)
+```
+
+
+```{r}
+dados_valid |> ggplot() +
+    geom_line(aes(x = t, y = X, color = "X")) +
+    geom_line(aes(x = t, y = X_prev_valid, color = "X Previsto Poisson")) +
+    labs(x = "Tempo", y = "Valor das ações do BBAS3", title = "Ajuste do modelo de processos de Poisson aos dados de ações do BBAS3 nas primeiras semanas de 2024") +
+    theme_minimal()
 ```

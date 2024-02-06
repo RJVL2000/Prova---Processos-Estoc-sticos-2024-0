@@ -1,4 +1,4 @@
-# Questão 2 {.unnumbered}
+# Questão 2 Acypreste {.unnumbered}
 
 ```{r}
 #| echo: false
@@ -7,7 +7,7 @@
 pacman::p_load(quantmod, ggplot2, tidyr, dplyr)
 
 # Set seed
-set.seed(12345)
+set.seed(123)
 ```
 
 ## Aplicação ao modelo empírico
@@ -40,7 +40,7 @@ Obtendo o número de observações no vetor de valores da ação, é possível g
 n <- length(stock_values) - 1
 t <- seq(0, 1, length.out = n + 1)
 B <- c(0, cumsum(rnorm(n, mean = 0, sd = 1)))
-N <- c(0, cumsum(rpois(n, lambda = 1 / n)))
+N <- c(0, cumsum(rpois(n, lambda = 1)))
 ```
 
 Em seguida, é criada uma função para prever a k-ésima observação do modelo, usando os tempos, o histórico do processo, o parâmetro $\theta$ e o valor do processo $\xi(t_{k})$
@@ -103,7 +103,6 @@ initial_theta <- 100
     csi = N ## Trajetória do processo de Poisson
 )$par)
 ```
-
 ```{r}
 X_prev_browniano <- simulate_Xtk(t, stock_values, estim_theta_browniano, B)
 X_prev_poisson <- simulate_Xtk(t, stock_values, estim_theta_poisson, N)
@@ -183,19 +182,28 @@ summary(stock_values)
 ```{r}
 n_valid <- length(stock_values_valid) - 1
 t_valid <- seq(0, 1, length.out = n_valid + 1)
-N_valid <- c(0, cumsum(rpois(n_valid, 1 / n_valid)))
+N_valid_browniano <- c(0, cumsum(rnorm(n_valid, mean = 0, sd = 1)))
+N_valid_poisson <- c(0, cumsum(rpois(n_valid, 1)))
 ```
 
 
 ```{r}
-X_prev_valid <- simulate_Xtk(t_valid, stock_values_valid, estim_theta_poisson, N_valid)
+X_prev_valid_browniano <- simulate_Xtk(t_valid,
+                                       stock_values_valid,
+                                       estim_theta_browniano,
+                                       N_valid_browniano)
+X_prev_valid_poisson <- simulate_Xtk(t_valid,
+                                     stock_values_valid,
+                                     estim_theta_poisson,
+                                     N_valid_poisson)
 
 dados_valid <- data.frame(
     t = t_valid[-1],
     X = stock_values_valid[-1],
-    X_prev_valid = X_prev_valid
+    X_prev_valid_browniano = X_prev_valid_browniano,
+    X_prev_valid_poisson = X_prev_valid_poisson
 ) |> 
-pivot_longer(cols = c(X, X_prev_valid),
+pivot_longer(cols = c(X, X_prev_valid_browniano, X_prev_valid_poisson),
              names_to = "Variavel",
              values_to = "Valor") 
 ```
@@ -203,12 +211,13 @@ pivot_longer(cols = c(X, X_prev_valid),
 
 ```{r}
 dados_valid |>
+    filter(Variavel != "X_prev_valid_poisson") |>
     ggplot() +
     geom_line(aes(x = t, y = Valor, color = Variavel)) +
     labs(x = "Tempo",
          y = "Valor das ações do BBAS3",
          color = NULL,
-         title = "Ajuste do modelo de processos de Poisson aos dados
+         title = "Ajuste do modelo do Movimento Browniano aos dados
           de ações do BBAS3 nas primeiras semanas de 2024") +
     theme_minimal()
 ```

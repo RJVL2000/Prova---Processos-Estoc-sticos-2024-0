@@ -1,4 +1,4 @@
-# Questão 1
+# Questão 1 {.unnumbered}
 
 
     
@@ -37,6 +37,7 @@ dados <-
 dados$Precipitacao |> summary()
 ```
 
+## a)
 
 O primeiro passo é discretizar a variável de precipitação, que é feita com a função `cut()` do pacote `base`. Para esse exemplo, a variável será dividida em 3 categorias: sem chuva (precipitação até $0,1$), chuva fraca (precipitação maior que $0,1$ e menor que $10$) e chuva forte.
 
@@ -78,6 +79,8 @@ dados <-
 
 
 ```
+
+## b)
 
 Para esse exemplo, serão separadas as 10 últimas observações para avaliar as estimações.
 
@@ -144,6 +147,7 @@ ultimo_estado <- dados_treinamento |>
 
 ```
 
+## c)
 
 Com a matriz de transição, basta considerar o último estado dos dados (`r ultimo_estado`) ---- consequência da propriedade de Markov ---- de treinamento para fazer as estimativas de transição de estado.
 

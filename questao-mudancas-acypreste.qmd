@@ -118,8 +118,8 @@ hist(residuo_poisson)
 
 ```{r}
 dados_sim <- data.frame(
-    t = t[-length(t)],
-    X = stock_values[-length(stock_values)],
+    t = t[-1],
+    X = stock_values[-1 ],
     X_prev_browniano = X_prev_browniano,
     X_prev_poisson = X_prev_poisson
 ) |> 

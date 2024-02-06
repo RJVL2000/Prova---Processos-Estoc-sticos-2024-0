@@ -286,7 +286,7 @@
 \maketitle
 \pagestyle{mystyle}
 
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[frame hidden, borderline west={3pt}{0pt}{shadecolor}, colback={codebgcolor}, boxrule=0pt, enhanced, breakable, sharp corners]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[frame hidden, colback={codebgcolor}, boxrule=0pt, borderline west={3pt}{0pt}{shadecolor}, enhanced, sharp corners, breakable]}{\end{tcolorbox}}\fi
 
 \bookmarksetup{startatroot}
 
@@ -750,8 +750,8 @@ W = 0.9795, p-value = 0.001227
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{dados\_sim }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
-    \AttributeTok{t =}\NormalTok{ t[}\SpecialCharTok{{-}}\FunctionTok{length}\NormalTok{(t)],}
-    \AttributeTok{X =}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\FunctionTok{length}\NormalTok{(stock\_values)],}
+    \AttributeTok{t =}\NormalTok{ t[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
+    \AttributeTok{X =}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
     \AttributeTok{X\_prev\_browniano =}\NormalTok{ X\_prev\_browniano,}
     \AttributeTok{X\_prev\_poisson =}\NormalTok{ X\_prev\_poisson}
 \NormalTok{) }\SpecialCharTok{|\textgreater{}} 
@@ -1115,8 +1115,8 @@ W = 0.93173, p-value = 2.835e-09
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{dados\_sim }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
-    \AttributeTok{t =}\NormalTok{ t[}\SpecialCharTok{{-}}\FunctionTok{length}\NormalTok{(t)],}
-    \AttributeTok{X =}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\FunctionTok{length}\NormalTok{(stock\_values)],}
+    \AttributeTok{t =}\NormalTok{ t[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
+    \AttributeTok{X =}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
     \AttributeTok{X\_prev\_browniano =}\NormalTok{ X\_prev\_browniano,}
     \AttributeTok{X\_prev\_poisson =}\NormalTok{ X\_prev\_poisson}
 \NormalTok{) }\SpecialCharTok{|\textgreater{}} 

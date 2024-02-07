@@ -3,7 +3,7 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
-# Questão 2 Acypreste {.unnumbered}
+# Questão 2 {.unnumbered}
 
 ```{r}
 #| echo: false
@@ -17,7 +17,7 @@ set.seed(123)
 
 ## Aplicação ao modelo empírico
 
-Trata-se de um modelo para avaliar o comportamento dos preços de fechamentos dos valores das ações do BBAS3 no ano de 2023.
+Trata-se de um modelo para avaliar o comportamento dos preços de fechamentos dos valores das ações do BBAS3 no ano de 2023. 
 
 ```{r}
 # Define the stock symbol and specify the start and end dates
@@ -41,7 +41,9 @@ summary(stock_values)
 
 ## a)
 
-Obtendo o número de observações no vetor de valores da ação, é possível gerar simulações do movimento Browniano e do processo de Poisson com a mesma quantidade de pontos que a base de dados. Considerando um intervalo de 0 a 1, em anos, é gerado um vetor $t$ relativo ao tempo decorrido do início da contagem ao momento de cada observação. Para simular o movimento Browniano, basta fazer a soma cumulativa de *n* valores da distribuição Normal padrão, enquanto para o processo de Poisson é feita a soma de valores da distribuição Poisson com parâmetro $\lambda=1/n$.
+Obtendo o número de observações no vetor de valores da ação, é possível gerar simulações do movimento Browniano e do processo de Poisson (padrão e compensado) com a mesma quantidade de pontos que a base de dados. Considerando um intervalo de 0 a 1, em anos, é gerado um vetor $t$ relativo ao tempo decorrido do início da contagem ao momento de cada observação. 
+
+Para simular o movimento Browniano, basta fazer a soma cumulativa de $n$ valores da distribuição Normal padrão. Para o processo de Poisson é feita a soma de valores da distribuição Poisson com parâmetro $\lambda=1$. Por fim, para o processo de Poisson compensado, é feita a soma de valores da distribuição Poisson com parâmetro $\lambda=1$ subtraídos de $\lambda t_{k} = t_{k}$, onde $t_{k}$ é o tempo decorrido do início da contagem ao momento de cada observação.
 
 ```{r}
 n <- length(stock_values) - 1
@@ -49,6 +51,43 @@ t <- seq(0, 1, length.out = n + 1)
 B <- c(0, cumsum(rnorm(n, mean = 0, sd = 1)))
 N <- c(0, cumsum(rpois(n, lambda = 1)))
 N_compensated <- c(0, cumsum(rpois(n, lambda = 1)) - seq(1, n, by = 1))
+```
+
+```{r}
+data.frame(time = t, Browniano = B) |> 
+    ggplot(aes(x = time, y = Browniano)) +
+    geom_line(color = "lightblue") +
+    labs(
+        x = "Tempo",
+        y = "Valor do movimento Browniano",
+        title = "Simulação do movimento Browniano"
+    ) +
+    theme_minimal()
+```
+
+
+```{r}
+data.frame(time = t, Poisson = N) |> 
+    ggplot(aes(x = time, y = Poisson)) +
+    geom_step(color = "darkred") +
+    labs(
+        x = "Tempo",
+        y = "Valor do processo de Poisson",
+        title = "Simulação do processo de Poisson"
+    ) +
+    theme_minimal()
+```
+
+```{r}
+data.frame(time = t, Compensated = N_compensated) |> 
+    ggplot(aes(x = time, y = Compensated)) +
+    geom_step(color = "darkred") +
+    labs(
+        x = "Tempo",
+        y = "Valor do processo de Poisson Compensado",
+        title = "Simulação do processo de Poisson Compensado"
+    ) +
+    theme_minimal()
 ```
 
 ## b)
@@ -128,6 +167,10 @@ initial_theta <- 100
 
 ## d)
 
+Os testes dos resíduos são feitos a seguir. O que se percebe é que os resíduos gerados pelos três modelos não seguem uma distribuição normal, o que pode ser observado pelos valores-p do teste de Shapiro-Wilk e pelos gráficos de histograma e de quantis. 
+
+Uma das possíveis razões pode ser a presença de autocorrelação nos resíduos, o que é confirmado pelo gráfico de autocorrelação. 
+
 ```{r}
 X_prev_browniano <-
     simulate_Xtk(t, stock_values, estim_theta_browniano, B)
@@ -141,13 +184,14 @@ shapiro.test(residuo_browniano)
 hist(residuo_browniano)
 qqnorm(residuo_browniano)
 qqline(residuo_browniano)
+acf(residuo_browniano)
 
 residuo_poisson <- stock_values[-1] - X_prev_poisson
 shapiro.test(residuo_poisson)
 hist(residuo_poisson)
 qqnorm(residuo_poisson)
 qqline(residuo_poisson)
-
+acf(residuo_poisson)
 
 
 residuo_poisson_compensated <- stock_values[-1] - X_prev_poisson_compensated
@@ -155,9 +199,12 @@ shapiro.test(residuo_poisson_compensated)
 hist(residuo_poisson_compensated)
 qqnorm(residuo_poisson_compensated)
 qqline(residuo_poisson_compensated)
+acf(residuo_poisson_compensated)
 ```
 
 ## e)
+
+Os modelos ajustados estão representados nos gráficos a seguir. Em todos eles, a série original está representada em vermelho. Visualmente, o modelo que melhor se ajusta aos dados é o modelo de movimento Browniano. Para testar isso, são realizados testes no item f.
 
 ```{r}
 dados_mod <- data.frame(
@@ -169,7 +216,10 @@ dados_mod <- data.frame(
 )
 dados_sim <- dados_mod |>
     pivot_longer(
-        cols = c(X, X_prev_browniano, X_prev_poisson, X_prev_poisson_compensated),
+        cols = c(X,
+                 X_prev_browniano,
+                 X_prev_poisson,
+                 X_prev_poisson_compensated),
         names_to = "Variavel",
         values_to = "Valor"
     )
@@ -224,27 +274,50 @@ dados_sim |>
 
 ## f) Definindo o melhor modelo
 
+
+Para definir o melhor modelo, pode-se comparar as métricas mais comumento usadas: 
+
 ```{r}
-(mse_browniano <- mean(residuo_browniano**2))
+mse_browniano <- mean(residuo_browniano**2)
 modelo_browniano <- lm(data = dados_mod, X ~ X_prev_browniano)
-(r2_browniano <- summary(modelo_browniano)$r.squared)
-(aic_browniano <- AIC(modelo_browniano))
+r2_browniano <- summary(modelo_browniano)$r.squared
+aic_browniano <- AIC(modelo_browniano)
 
-(mse_poisson <- mean(residuo_poisson**2))
+mse_poisson <- mean(residuo_poisson**2)
 modelo_poisson <- lm(data = dados_mod, X ~ X_prev_poisson)
-(r2_poisson <- summary(modelo_poisson)$r.squared)
-(aic_poisson <- AIC(modelo_poisson))
+r2_poisson <- summary(modelo_poisson)$r.squared
+aic_poisson <- AIC(modelo_poisson)
 
-(mse_poisson_compensated <- mean(residuo_poisson_compensated**2))
+mse_poisson_compensated <- mean(residuo_poisson_compensated**2)
 modelo_poisson_compensated <- lm(
     data = dados_mod,
     X ~ X_prev_poisson_compensated
 )
-(r2_poisson_compensated <- summary(modelo_poisson_compensated)$r.squared)
-(aic_poisson_compensated <- AIC(modelo_poisson))
+r2_poisson_compensated <- summary(modelo_poisson_compensated)$r.squared
+aic_poisson_compensated <- AIC(modelo_poisson)
 ```
 
+
+```{r}
+resultados <- data.frame(
+    Modelo = c("Movimento Browniano", "Processo de Poisson", "Processo de Poisson Compensado"),
+    MSE = c(mse_browniano, mse_poisson, mse_poisson_compensated),
+    R2 = c(r2_browniano, r2_poisson, r2_poisson_compensated),
+    AIC = c(aic_browniano, aic_poisson, aic_poisson_compensated)
+)
+
+resultados
+```
+
+- **MSE**: o modelo com menor erro quadrático médio é o modelo de movimento Browniano.
+- **R²**: o modelo com maior coeficiente de determinação é o modelo de movimento Browniano.
+- **AIC**: o modelo com menor critério de informação de Akaike é o modelo de movimento Browniano.
+
+
+
 ## g) Previsão de valores de 2024
+
+Primeiro, foram baixados os dados das ações entre os dias 1 e 15 de janeiro de 2024. Em seguida, foram geradas as previsões dos três modelos para esses dias.  
 
 ```{r}
 # Define the stock symbol and specify the start and end dates
@@ -328,14 +401,14 @@ dados_valid |>
         x = "Tempo",
         y = "Valor das ações do BBAS3",
         color = NULL,
-        title = "Ajuste do modelo do Movimento Browniano aos dados
+        title = "Ajuste dos modelos aos dados
           de ações do BBAS3 nas primeiras semanas de 2024"
     ) +
     theme_minimal()
 ```
 
 
-O modelo que ajustou melhor os dados foi o modelo estimado pelo movimento Browniano.
+Como percebido pelo item anterior, o modelo que ajustou melhor os dados foi o modelo estimado pelo movimento Browniano, cujo gráfico pode ser visto a seguir:
 
 ```{r}
 dados_valid |>
@@ -351,3 +424,6 @@ dados_valid |>
     ) +
     theme_minimal()
 ```
+
+
+Nessa linha, o movimento Browniano parece ter melhores propriedades para estimar e prever valores futuros das ações, marcadamente conhecidos por alta volatilidade e comportamentos não-lineares e não-sistemáticos.

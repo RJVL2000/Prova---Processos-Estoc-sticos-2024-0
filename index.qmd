@@ -35,11 +35,12 @@ dados <-
 
 # Summary statistics
 dados$Precipitacao |> summary()
+hist(dados$Precipitacao)
 ```
 
 ## a)
 
-O primeiro passo é discretizar a variável de precipitação, que é feita com a função `cut()` do pacote `base`. Para esse exemplo, a variável será dividida em 3 categorias: sem chuva (precipitação até $0,1$), chuva fraca (precipitação maior que $0,1$ e menor que $10$) e chuva forte.
+O primeiro passo é discretizar a variável de precipitação, que é feita com a função `cut()` do pacote `base`. Para esse exemplo, a variável será dividida em 5 categorias: sem chuva (precipitação até $0,001$), garoa (precipitação até $1$), chuva fraca (precipitação até $4,8$), chuva moderada (precipitação até $14,2$) e chuva forte (precipitação acima de $14,2$).
 
 ```{r}
 
@@ -76,7 +77,7 @@ dados <-
         labels = state_labels
     ))
 
-hist(dados$Precipitacao)
+
 
 ```
 
@@ -140,16 +141,18 @@ matriz_transicao <-
     column_to_rownames("rain_status") |>
     as.matrix()
 
+matriz_transicao
+
 ultimo_estado <- dados_treinamento |>
     tail(1) |>
     pull(rain_status)
 
-
+ultimo_estado
 ```
 
 ## c)
 
-Com a matriz de transição, basta considerar o último estado dos dados (`r ultimo_estado`) ---- consequência da propriedade de Markov ---- de treinamento para fazer as estimativas de transição de estado.
+Com a matriz de transição, basta considerar o último estado dos dados de treinamento (`r ultimo_estado`) ---- consequência da propriedade de Markov ---- para fazer as estimativas de transição de estado.
 
 
 ```{r}
@@ -170,10 +173,10 @@ simula_cadeia_markov <- function(n = 10,
 }
 # Excecution of the function
 previsoes <- simula_cadeia_markov(
-    valor_inicial = ultimo_estado,
+    valor_inicial    = ultimo_estado,
     matriz_transicao = matriz_transicao,
-    estados = state_labels,
-    n = 10
+    estados          = state_labels,
+    n                = 10
 )
 ```
 

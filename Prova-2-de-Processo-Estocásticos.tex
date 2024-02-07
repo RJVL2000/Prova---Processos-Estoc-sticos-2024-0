@@ -9,7 +9,6 @@
   numbers=noendperiod]{scrreprt}
 
 \usepackage{amsmath,amssymb}
-\usepackage{lmodern}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
@@ -19,6 +18,10 @@
   \usepackage{unicode-math}
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else  
+    % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -242,10 +245,13 @@
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
 \makeatletter
-\@ifpackageloaded{tcolorbox}{}{\usepackage[many]{tcolorbox}}
+\@ifpackageloaded{tcolorbox}{}{\usepackage[skins,breakable]{tcolorbox}}
 \makeatother
 \makeatletter
-\@ifundefined{shadecolor}{\definecolor{shadecolor}{named}{light}}
+\@ifundefined{shadecolor}{\definecolor{shadecolor}{rgb}{.97, .97, .97}}
+\makeatother
+\makeatletter
+\@ifundefined{codebgcolor}{\definecolor{codebgcolor}{named}{light}}
 \makeatother
 \makeatletter
 \makeatother
@@ -280,7 +286,7 @@
 \maketitle
 \pagestyle{mystyle}
 
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, colback={shadecolor}, breakable, frame hidden, enhanced]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[borderline west={3pt}{0pt}{shadecolor}, boxrule=0pt, frame hidden, sharp corners, colback={codebgcolor}, enhanced, breakable]}{\end{tcolorbox}}\fi
 
 \bookmarksetup{startatroot}
 
@@ -321,6 +327,20 @@ os estados de precipitação de chuvas.
   0.000   0.000   0.000   4.173   2.400 131.000 
 \end{verbatim}
 
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{hist}\NormalTok{(dados}\SpecialCharTok{$}\NormalTok{Precipitacao)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}[H]
+
+{\centering \includegraphics{index_files/figure-pdf/unnamed-chunk-2-1.pdf}
+
+}
+
+\end{figure}
+
 \hypertarget{a}{%
 \section*{a)}\label{a}}
 \addcontentsline{toc}{section}{a)}
@@ -329,9 +349,10 @@ os estados de precipitação de chuvas.
 
 O primeiro passo é discretizar a variável de precipitação, que é feita
 com a função \texttt{cut()} do pacote \texttt{base}. Para esse exemplo,
-a variável será dividida em 3 categorias: sem chuva (precipitação até
-\(0,1\)), chuva fraca (precipitação maior que \(0,1\) e menor que
-\(10\)) e chuva forte.
+a variável será dividida em 5 categorias: sem chuva (precipitação até
+\(0,001\)), garoa (precipitação até \(1\)), chuva fraca (precipitação
+até \(4,8\)), chuva moderada (precipitação até \(14,2\)) e chuva forte
+(precipitação acima de \(14,2\)).
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -367,18 +388,8 @@ a variável será dividida em 3 categorias: sem chuva (precipitação até
         \AttributeTok{breaks =}\NormalTok{ breaks,}
         \AttributeTok{labels =}\NormalTok{ state\_labels}
 \NormalTok{    ))}
-
-\FunctionTok{hist}\NormalTok{(dados}\SpecialCharTok{$}\NormalTok{Precipitacao)}
 \end{Highlighting}
 \end{Shaded}
-
-\begin{figure}[H]
-
-{\centering \includegraphics{./index_files/figure-pdf/unnamed-chunk-3-1.pdf}
-
-}
-
-\end{figure}
 
 \hypertarget{b}{%
 \section*{b)}\label{b}}
@@ -451,11 +462,33 @@ de transição de estado.
     \FunctionTok{column\_to\_rownames}\NormalTok{(}\StringTok{"rain\_status"}\NormalTok{) }\SpecialCharTok{|\textgreater{}}
     \FunctionTok{as.matrix}\NormalTok{()}
 
+\NormalTok{matriz\_transicao}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+               sem chuva garoa chuva fraca chuva moderada chuva forte
+sem chuva          0.822 0.041       0.051          0.045       0.040
+garoa              0.334 0.120       0.186          0.177       0.183
+chuva fraca        0.306 0.133       0.187          0.184       0.190
+chuva moderada     0.306 0.121       0.171          0.193       0.210
+chuva forte        0.282 0.118       0.174          0.204       0.223
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
 \NormalTok{ultimo\_estado }\OtherTok{\textless{}{-}}\NormalTok{ dados\_treinamento }\SpecialCharTok{|\textgreater{}}
     \FunctionTok{tail}\NormalTok{(}\DecValTok{1}\NormalTok{) }\SpecialCharTok{|\textgreater{}}
     \FunctionTok{pull}\NormalTok{(rain\_status)}
+
+\NormalTok{ultimo\_estado}
 \end{Highlighting}
 \end{Shaded}
+
+\begin{verbatim}
+[1] garoa
+Levels: sem chuva garoa chuva fraca chuva moderada chuva forte
+\end{verbatim}
 
 \hypertarget{c}{%
 \section*{c)}\label{c}}
@@ -463,9 +496,9 @@ de transição de estado.
 
 \markright{c)}
 
-Com a matriz de transição, basta considerar o último estado dos dados
-(garoa) ---- consequência da propriedade de Markov ---- de treinamento
-para fazer as estimativas de transição de estado.
+Com a matriz de transição, basta considerar o último estado dos dados de
+treinamento (garoa) ---- consequência da propriedade de Markov ---- para
+fazer as estimativas de transição de estado.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -486,10 +519,10 @@ para fazer as estimativas de transição de estado.
 \NormalTok{\}}
 \CommentTok{\# Excecution of the function}
 \NormalTok{previsoes }\OtherTok{\textless{}{-}} \FunctionTok{simula\_cadeia\_markov}\NormalTok{(}
-    \AttributeTok{valor\_inicial =}\NormalTok{ ultimo\_estado,}
+    \AttributeTok{valor\_inicial    =}\NormalTok{ ultimo\_estado,}
     \AttributeTok{matriz\_transicao =}\NormalTok{ matriz\_transicao,}
-    \AttributeTok{estados =}\NormalTok{ state\_labels,}
-    \AttributeTok{n =} \DecValTok{10}
+    \AttributeTok{estados          =}\NormalTok{ state\_labels,}
+    \AttributeTok{n                =} \DecValTok{10}
 \NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
@@ -550,7 +583,7 @@ gráfico, os acertos são indicados pela linha tracejada vermelha.
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./index_files/figure-pdf/unnamed-chunk-8-1.pdf}
+{\centering \includegraphics{index_files/figure-pdf/unnamed-chunk-8-1.pdf}
 
 }
 
@@ -558,11 +591,11 @@ gráfico, os acertos são indicados pela linha tracejada vermelha.
 
 \bookmarksetup{startatroot}
 
-\hypertarget{questuxe3o-2-acypreste}{%
-\chapter*{Questão 2 Acypreste}\label{questuxe3o-2-acypreste}}
-\addcontentsline{toc}{chapter}{Questão 2 Acypreste}
+\hypertarget{questuxe3o-2}{%
+\chapter*{Questão 2}\label{questuxe3o-2}}
+\addcontentsline{toc}{chapter}{Questão 2}
 
-\markboth{Questão 2 Acypreste}{Questão 2 Acypreste}
+\markboth{Questão 2}{Questão 2}
 
 \hypertarget{aplicauxe7uxe3o-ao-modelo-empuxedrico-1}{%
 \section*{Aplicação ao modelo
@@ -616,14 +649,19 @@ fechamentos dos valores das ações do BBAS3 no ano de 2023.
 \markright{a)}
 
 Obtendo o número de observações no vetor de valores da ação, é possível
-gerar simulações do movimento Browniano e do processo de Poisson com a
-mesma quantidade de pontos que a base de dados. Considerando um
-intervalo de 0 a 1, em anos, é gerado um vetor \(t\) relativo ao tempo
-decorrido do início da contagem ao momento de cada observação. Para
-simular o movimento Browniano, basta fazer a soma cumulativa de \emph{n}
-valores da distribuição Normal padrão, enquanto para o processo de
-Poisson é feita a soma de valores da distribuição Poisson com parâmetro
-\(\lambda=1/n\).
+gerar simulações do movimento Browniano e do processo de Poisson (padrão
+e compensado) com a mesma quantidade de pontos que a base de dados.
+Considerando um intervalo de 0 a 1, em anos, é gerado um vetor \(t\)
+relativo ao tempo decorrido do início da contagem ao momento de cada
+observação.
+
+Para simular o movimento Browniano, basta fazer a soma cumulativa de
+\(n\) valores da distribuição Normal padrão. Para o processo de Poisson
+é feita a soma de valores da distribuição Poisson com parâmetro
+\(\lambda=1\). Por fim, para o processo de Poisson compensado, é feita a
+soma de valores da distribuição Poisson com parâmetro \(\lambda=1\)
+subtraídos de \(\lambda t_{k} = t_{k}\), onde \(t_{k}\) é o tempo
+decorrido do início da contagem ao momento de cada observação.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -634,6 +672,72 @@ Poisson é feita a soma de valores da distribuição Poisson com parâmetro
 \NormalTok{N\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rpois}\NormalTok{(n, }\AttributeTok{lambda =} \DecValTok{1}\NormalTok{)) }\SpecialCharTok{{-}} \FunctionTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{, n, }\AttributeTok{by =} \DecValTok{1}\NormalTok{))}
 \end{Highlighting}
 \end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{data.frame}\NormalTok{(}\AttributeTok{time =}\NormalTok{ t, }\AttributeTok{Browniano =}\NormalTok{ B) }\SpecialCharTok{|\textgreater{}} 
+    \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ time, }\AttributeTok{y =}\NormalTok{ Browniano)) }\SpecialCharTok{+}
+    \FunctionTok{geom\_line}\NormalTok{(}\AttributeTok{color =} \StringTok{"lightblue"}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{labs}\NormalTok{(}
+        \AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
+        \AttributeTok{y =} \StringTok{"Valor do movimento Browniano"}\NormalTok{,}
+        \AttributeTok{title =} \StringTok{"Simulação do movimento Browniano"}
+\NormalTok{    ) }\SpecialCharTok{+}
+    \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}[H]
+
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-4-1.pdf}
+
+}
+
+\end{figure}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{data.frame}\NormalTok{(}\AttributeTok{time =}\NormalTok{ t, }\AttributeTok{Poisson =}\NormalTok{ N) }\SpecialCharTok{|\textgreater{}} 
+    \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ time, }\AttributeTok{y =}\NormalTok{ Poisson)) }\SpecialCharTok{+}
+    \FunctionTok{geom\_step}\NormalTok{(}\AttributeTok{color =} \StringTok{"darkred"}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{labs}\NormalTok{(}
+        \AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
+        \AttributeTok{y =} \StringTok{"Valor do processo de Poisson"}\NormalTok{,}
+        \AttributeTok{title =} \StringTok{"Simulação do processo de Poisson"}
+\NormalTok{    ) }\SpecialCharTok{+}
+    \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}[H]
+
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-5-1.pdf}
+
+}
+
+\end{figure}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{data.frame}\NormalTok{(}\AttributeTok{time =}\NormalTok{ t, }\AttributeTok{Compensated =}\NormalTok{ N\_compensated) }\SpecialCharTok{|\textgreater{}} 
+    \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ time, }\AttributeTok{y =}\NormalTok{ Compensated)) }\SpecialCharTok{+}
+    \FunctionTok{geom\_step}\NormalTok{(}\AttributeTok{color =} \StringTok{"darkred"}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{labs}\NormalTok{(}
+        \AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
+        \AttributeTok{y =} \StringTok{"Valor do processo de Poisson Compensado"}\NormalTok{,}
+        \AttributeTok{title =} \StringTok{"Simulação do processo de Poisson Compensado"}
+\NormalTok{    ) }\SpecialCharTok{+}
+    \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}[H]
+
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-6-1.pdf}
+
+}
+
+\end{figure}
 
 \hypertarget{b-1}{%
 \section*{b)}\label{b-1}}
@@ -755,6 +859,14 @@ movimento Browniano e para o processo de Poisson.
 
 \markright{d)}
 
+Os testes dos resíduos são feitos a seguir. O que se percebe é que os
+resíduos gerados pelos três modelos não seguem uma distribuição normal,
+o que pode ser observado pelos valores-p do teste de Shapiro-Wilk e
+pelos gráficos de histograma e de quantis.
+
+Uma das possíveis razões pode ser a presença de autocorrelação nos
+resíduos, o que é confirmado pelo gráfico de autocorrelação.
+
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{X\_prev\_browniano }\OtherTok{\textless{}{-}}
@@ -785,7 +897,7 @@ W = 0.97457, p-value = 0.000208
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-1.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-10-1.pdf}
 
 }
 
@@ -800,7 +912,21 @@ W = 0.97457, p-value = 0.000208
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-2.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-10-2.pdf}
+
+}
+
+\end{figure}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{acf}\NormalTok{(residuo\_browniano)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}[H]
+
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-10-3.pdf}
 
 }
 
@@ -829,7 +955,7 @@ W = 0.93173, p-value = 2.835e-09
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-3.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-10-4.pdf}
 
 }
 
@@ -844,7 +970,21 @@ W = 0.93173, p-value = 2.835e-09
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-4.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-10-5.pdf}
+
+}
+
+\end{figure}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{acf}\NormalTok{(residuo\_poisson)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}[H]
+
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-10-6.pdf}
 
 }
 
@@ -873,7 +1013,7 @@ W = 0.9024, p-value = 1.395e-11
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-5.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-10-7.pdf}
 
 }
 
@@ -888,7 +1028,21 @@ W = 0.9024, p-value = 1.395e-11
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-6.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-10-8.pdf}
+
+}
+
+\end{figure}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{acf}\NormalTok{(residuo\_poisson\_compensated)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}[H]
+
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-10-9.pdf}
 
 }
 
@@ -899,6 +1053,11 @@ W = 0.9024, p-value = 1.395e-11
 \addcontentsline{toc}{section}{e)}
 
 \markright{e)}
+
+Os modelos ajustados estão representados nos gráficos a seguir. Em todos
+eles, a série original está representada em vermelho. Visualmente, o
+modelo que melhor se ajusta aos dados é o modelo de movimento Browniano.
+Para testar isso, são realizados testes no item f.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -911,7 +1070,10 @@ W = 0.9024, p-value = 1.395e-11
 \NormalTok{)}
 \NormalTok{dados\_sim }\OtherTok{\textless{}{-}}\NormalTok{ dados\_mod }\SpecialCharTok{|\textgreater{}}
     \FunctionTok{pivot\_longer}\NormalTok{(}
-        \AttributeTok{cols =} \FunctionTok{c}\NormalTok{(X, X\_prev\_browniano, X\_prev\_poisson, X\_prev\_poisson\_compensated),}
+        \AttributeTok{cols =} \FunctionTok{c}\NormalTok{(X,}
+\NormalTok{                 X\_prev\_browniano,}
+\NormalTok{                 X\_prev\_poisson,}
+\NormalTok{                 X\_prev\_poisson\_compensated),}
         \AttributeTok{names\_to =} \StringTok{"Variavel"}\NormalTok{,}
         \AttributeTok{values\_to =} \StringTok{"Valor"}
 \NormalTok{    )}
@@ -937,7 +1099,7 @@ W = 0.9024, p-value = 1.395e-11
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-9-1.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-12-1.pdf}
 
 }
 
@@ -962,7 +1124,7 @@ W = 0.9024, p-value = 1.395e-11
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-10-1.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-13-1.pdf}
 
 }
 
@@ -987,7 +1149,7 @@ W = 0.9024, p-value = 1.395e-11
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-11-1.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-14-1.pdf}
 
 }
 
@@ -1000,101 +1162,63 @@ modelo}\label{f-definindo-o-melhor-modelo}}
 
 \markright{f) Definindo o melhor modelo}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{(mse\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(residuo\_browniano}\SpecialCharTok{**}\DecValTok{2}\NormalTok{))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-[1] 8.369757
-\end{verbatim}
+Para definir o melhor modelo, pode-se comparar as métricas mais
+comumento usadas:
 
 \begin{Shaded}
 \begin{Highlighting}[]
+\NormalTok{mse\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(residuo\_browniano}\SpecialCharTok{**}\DecValTok{2}\NormalTok{)}
 \NormalTok{modelo\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(}\AttributeTok{data =}\NormalTok{ dados\_mod, X }\SpecialCharTok{\textasciitilde{}}\NormalTok{ X\_prev\_browniano)}
-\NormalTok{(r2\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(modelo\_browniano)}\SpecialCharTok{$}\NormalTok{r.squared)}
-\end{Highlighting}
-\end{Shaded}
+\NormalTok{r2\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(modelo\_browniano)}\SpecialCharTok{$}\NormalTok{r.squared}
+\NormalTok{aic\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(modelo\_browniano)}
 
-\begin{verbatim}
-[1] 0.7351166
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{(aic\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(modelo\_browniano))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-[1] 1190.829
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{(mse\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(residuo\_poisson}\SpecialCharTok{**}\DecValTok{2}\NormalTok{))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-[1] 51.26353
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
+\NormalTok{mse\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(residuo\_poisson}\SpecialCharTok{**}\DecValTok{2}\NormalTok{)}
 \NormalTok{modelo\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(}\AttributeTok{data =}\NormalTok{ dados\_mod, X }\SpecialCharTok{\textasciitilde{}}\NormalTok{ X\_prev\_poisson)}
-\NormalTok{(r2\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(modelo\_poisson)}\SpecialCharTok{$}\NormalTok{r.squared)}
-\end{Highlighting}
-\end{Shaded}
+\NormalTok{r2\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(modelo\_poisson)}\SpecialCharTok{$}\NormalTok{r.squared}
+\NormalTok{aic\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(modelo\_poisson)}
 
-\begin{verbatim}
-[1] 0.1688992
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{(aic\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(modelo\_poisson))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-[1] 1473.264
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{(mse\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(residuo\_poisson\_compensated}\SpecialCharTok{**}\DecValTok{2}\NormalTok{))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-[1] 45.57743
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
+\NormalTok{mse\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(residuo\_poisson\_compensated}\SpecialCharTok{**}\DecValTok{2}\NormalTok{)}
 \NormalTok{modelo\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(}
     \AttributeTok{data =}\NormalTok{ dados\_mod,}
 \NormalTok{    X }\SpecialCharTok{\textasciitilde{}}\NormalTok{ X\_prev\_poisson\_compensated}
 \NormalTok{)}
-\NormalTok{(r2\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(modelo\_poisson\_compensated)}\SpecialCharTok{$}\NormalTok{r.squared)}
+\NormalTok{r2\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(modelo\_poisson\_compensated)}\SpecialCharTok{$}\NormalTok{r.squared}
+\NormalTok{aic\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(modelo\_poisson)}
 \end{Highlighting}
 \end{Shaded}
-
-\begin{verbatim}
-[1] 0.7289872
-\end{verbatim}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{(aic\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(modelo\_poisson))}
+\NormalTok{resultados }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{Modelo =} \FunctionTok{c}\NormalTok{(}\StringTok{"Movimento Browniano"}\NormalTok{, }\StringTok{"Processo de Poisson"}\NormalTok{, }\StringTok{"Processo de Poisson Compensado"}\NormalTok{),}
+    \AttributeTok{MSE =} \FunctionTok{c}\NormalTok{(mse\_browniano, mse\_poisson, mse\_poisson\_compensated),}
+    \AttributeTok{R2 =} \FunctionTok{c}\NormalTok{(r2\_browniano, r2\_poisson, r2\_poisson\_compensated),}
+    \AttributeTok{AIC =} \FunctionTok{c}\NormalTok{(aic\_browniano, aic\_poisson, aic\_poisson\_compensated)}
+\NormalTok{)}
+
+\NormalTok{resultados}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-[1] 1473.264
+                          Modelo       MSE        R2      AIC
+1            Movimento Browniano  8.369757 0.7351166 1190.829
+2            Processo de Poisson 51.263530 0.1688992 1473.264
+3 Processo de Poisson Compensado 45.577426 0.7289872 1473.264
 \end{verbatim}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{MSE}: o modelo com menor erro quadrático médio é o modelo de
+  movimento Browniano.
+\item
+  \textbf{R²}: o modelo com maior coeficiente de determinação é o modelo
+  de movimento Browniano.
+\item
+  \textbf{AIC}: o modelo com menor critério de informação de Akaike é o
+  modelo de movimento Browniano.
+\end{itemize}
 
 \hypertarget{g-previsuxe3o-de-valores-de-2024}{%
 \section*{g) Previsão de valores de
@@ -1102,6 +1226,10 @@ modelo}\label{f-definindo-o-melhor-modelo}}
 \addcontentsline{toc}{section}{g) Previsão de valores de 2024}
 
 \markright{g) Previsão de valores de 2024}
+
+Primeiro, foram baixados os dados das ações entre os dias 1 e 15 de
+janeiro de 2024. Em seguida, foram geradas as previsões dos três modelos
+para esses dias.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -1202,7 +1330,7 @@ As previsões geradas pelos três modelos são:
         \AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
         \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
         \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
-        \AttributeTok{title =} \StringTok{"Ajuste do modelo do Movimento Browniano aos dados}
+        \AttributeTok{title =} \StringTok{"Ajuste dos modelos aos dados}
 \StringTok{          de ações do BBAS3 nas primeiras semanas de 2024"}
 \NormalTok{    ) }\SpecialCharTok{+}
     \FunctionTok{theme\_minimal}\NormalTok{()}
@@ -1211,14 +1339,15 @@ As previsões geradas pelos três modelos são:
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-16-1.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-20-1.pdf}
 
 }
 
 \end{figure}
 
-O modelo que ajustou melhor os dados foi o modelo estimado pelo
-movimento Browniano.
+Como percebido pelo item anterior, o modelo que ajustou melhor os dados
+foi o modelo estimado pelo movimento Browniano, cujo gráfico pode ser
+visto a seguir:
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -1239,11 +1368,15 @@ movimento Browniano.
 
 \begin{figure}[H]
 
-{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-17-1.pdf}
+{\centering \includegraphics{questao-2_files/figure-pdf/unnamed-chunk-21-1.pdf}
 
 }
 
 \end{figure}
+
+Nessa linha, o movimento Browniano parece ter melhores propriedades para
+estimar e prever valores futuros das ações, marcadamente conhecidos por
+alta volatilidade e comportamentos não-lineares e não-sistemáticos.
 
 
 

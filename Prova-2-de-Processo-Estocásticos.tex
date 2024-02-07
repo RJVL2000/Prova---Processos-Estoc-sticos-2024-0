@@ -9,6 +9,7 @@
   numbers=noendperiod]{scrreprt}
 
 \usepackage{amsmath,amssymb}
+\usepackage{lmodern}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
@@ -18,10 +19,6 @@
   \usepackage{unicode-math}
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
-\fi
-\usepackage{lmodern}
-\ifPDFTeX\else  
-    % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -245,13 +242,10 @@
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
 \makeatletter
-\@ifpackageloaded{tcolorbox}{}{\usepackage[skins,breakable]{tcolorbox}}
+\@ifpackageloaded{tcolorbox}{}{\usepackage[many]{tcolorbox}}
 \makeatother
 \makeatletter
-\@ifundefined{shadecolor}{\definecolor{shadecolor}{rgb}{.97, .97, .97}}
-\makeatother
-\makeatletter
-\@ifundefined{codebgcolor}{\definecolor{codebgcolor}{named}{light}}
+\@ifundefined{shadecolor}{\definecolor{shadecolor}{named}{light}}
 \makeatother
 \makeatletter
 \makeatother
@@ -286,7 +280,7 @@
 \maketitle
 \pagestyle{mystyle}
 
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, frame hidden, borderline west={3pt}{0pt}{shadecolor}, colback={codebgcolor}, sharp corners, breakable, enhanced]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, colback={shadecolor}, breakable, frame hidden, enhanced]}{\end{tcolorbox}}\fi
 
 \bookmarksetup{startatroot}
 
@@ -373,8 +367,18 @@ a variável será dividida em 3 categorias: sem chuva (precipitação até
         \AttributeTok{breaks =}\NormalTok{ breaks,}
         \AttributeTok{labels =}\NormalTok{ state\_labels}
 \NormalTok{    ))}
+
+\FunctionTok{hist}\NormalTok{(dados}\SpecialCharTok{$}\NormalTok{Precipitacao)}
 \end{Highlighting}
 \end{Shaded}
+
+\begin{figure}[H]
+
+{\centering \includegraphics{./index_files/figure-pdf/unnamed-chunk-3-1.pdf}
+
+}
+
+\end{figure}
 
 \hypertarget{b}{%
 \section*{b)}\label{b}}
@@ -546,372 +550,7 @@ gráfico, os acertos são indicados pela linha tracejada vermelha.
 
 \begin{figure}[H]
 
-{\centering \includegraphics{index_files/figure-pdf/unnamed-chunk-8-1.pdf}
-
-}
-
-\end{figure}
-
-\bookmarksetup{startatroot}
-
-\hypertarget{questuxe3o-2}{%
-\chapter*{Questão 2}\label{questuxe3o-2}}
-\addcontentsline{toc}{chapter}{Questão 2}
-
-\markboth{Questão 2}{Questão 2}
-
-\hypertarget{aplicauxe7uxe3o-ao-modelo-empuxedrico-1}{%
-\section*{Aplicação ao modelo
-empírico}\label{aplicauxe7uxe3o-ao-modelo-empuxedrico-1}}
-\addcontentsline{toc}{section}{Aplicação ao modelo empírico}
-
-\markright{Aplicação ao modelo empírico}
-
-Trata-se de um modelo para avaliar o comportamento dos preços de
-fechamentos dos valores das ações do BBAS3 no ano de 2023.
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# Define the stock symbol and specify the start and end dates}
-\NormalTok{stock\_symbol }\OtherTok{\textless{}{-}} \StringTok{"BBAS3.SA"}
-\NormalTok{start\_date }\OtherTok{\textless{}{-}} \StringTok{"2023{-}01{-}01"}
-\NormalTok{end\_date }\OtherTok{\textless{}{-}} \StringTok{"2024{-}01{-}01"}
-
-\CommentTok{\# Use getSymbols to fetch historical stock data}
-\FunctionTok{getSymbols}\NormalTok{(stock\_symbol,}
-    \AttributeTok{src =} \StringTok{"yahoo"}\NormalTok{,}
-    \AttributeTok{from =}\NormalTok{ start\_date,}
-    \AttributeTok{to =}\NormalTok{ end\_date}
-\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-[1] "BBAS3.SA"
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# Check the loaded data and get the closing values}
-\NormalTok{stock\_values }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(}\FunctionTok{Cl}\NormalTok{(}\FunctionTok{get}\NormalTok{(stock\_symbol)))}
-
-\CommentTok{\# Summary statistics}
-\FunctionTok{summary}\NormalTok{(stock\_values)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  32.64   40.78   47.00   45.49   49.07   55.39 
-\end{verbatim}
-
-Obtendo o número de observações no vetor de valores da ação, é possível
-gerar simulações do movimento Browniano e do processo de Poisson com a
-mesma quantidade de pontos que a base de dados. Considerando um
-intervalo de 0 a 1, em anos, é gerado um vetor \(t\) relativo ao tempo
-decorrido do início da contagem ao momento de cada observação. Para
-simular o movimento Browniano, basta fazer a soma cumulativa de \emph{n}
-valores da distribuição Normal padrão, enquanto para o processo de
-Poisson é feita a soma de valores da distribuição Poisson com parâmetro
-\(\lambda=1/n\).
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{n }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(stock\_values) }\SpecialCharTok{{-}} \DecValTok{1}
-\NormalTok{t }\OtherTok{\textless{}{-}} \FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{, }\AttributeTok{length.out =}\NormalTok{ n }\SpecialCharTok{+} \DecValTok{1}\NormalTok{)}
-\NormalTok{B }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(n, }\AttributeTok{mean =} \DecValTok{0}\NormalTok{, }\AttributeTok{sd =} \DecValTok{1}\NormalTok{)))}
-\NormalTok{N }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rpois}\NormalTok{(n, }\AttributeTok{lambda =} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ n)))}
-\end{Highlighting}
-\end{Shaded}
-
-Em seguida, é criada uma função para prever a k-ésima observação do
-modelo, usando os tempos, o histórico do processo, o parâmetro
-\(\theta\) e o valor do processo \(\xi(t_{k})\)
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{simulate\_Xtk }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(t, X, theta, csi) \{}
-\NormalTok{    timeline }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(t)}
-\NormalTok{    history }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(X)}
-\NormalTok{    csi }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(csi)}
-\NormalTok{stop}
-
-    \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{length}\NormalTok{(timeline) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(history) }\SpecialCharTok{||}
-        \FunctionTok{length}\NormalTok{(timeline) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(csi) }\SpecialCharTok{||}
-        \FunctionTok{length}\NormalTok{(history) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(csi)) \{}
-        \FunctionTok{stop}\NormalTok{(}\StringTok{"The timeline, the history and the csi vector must have the same length!"}\NormalTok{)}
-        
-\NormalTok{    \}}
-
-\NormalTok{    n }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(timeline)}
-
-\NormalTok{    tj }\OtherTok{\textless{}{-}}\NormalTok{ timeline[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
-\NormalTok{    tj\_1 }\OtherTok{\textless{}{-}}\NormalTok{ timeline[}\SpecialCharTok{{-}}\NormalTok{n]}
-\NormalTok{    Xtj\_1 }\OtherTok{\textless{}{-}}\NormalTok{ history[}\SpecialCharTok{{-}}\NormalTok{n]}
-\NormalTok{    fatork }\OtherTok{\textless{}{-}}\NormalTok{ Xtj\_1 }\SpecialCharTok{*}\NormalTok{ (tj }\SpecialCharTok{{-}}\NormalTok{ tj\_1)}
-\NormalTok{    sumk }\OtherTok{\textless{}{-}} \FunctionTok{cumsum}\NormalTok{(fatork)}
-\NormalTok{    Xtk }\OtherTok{\textless{}{-}}\NormalTok{ Xtj\_1 }\SpecialCharTok{{-}}\NormalTok{ theta }\SpecialCharTok{*}\NormalTok{ sumk }\SpecialCharTok{+}\NormalTok{ csi[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
-    \FunctionTok{return}\NormalTok{(Xtk)}
-\NormalTok{\}}
-\end{Highlighting}
-\end{Shaded}
-
-Para estimar o parâmetro \(\theta\) por meio do método dos mínimos
-quadrados, é criada uma função que recebe os mesmos \emph{inputs} da
-função de simulação, porém retornando a soma de quadrados do resíduo.
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{least\_squares }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(t, X, theta, csi) \{}
-\NormalTok{    observed\_values }\OtherTok{\textless{}{-}}\NormalTok{ X[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
-\NormalTok{    predicted\_values }\OtherTok{\textless{}{-}} \FunctionTok{simulate\_Xtk}\NormalTok{(t, X, theta, csi)}
-
-    \FunctionTok{return}\NormalTok{(}\FunctionTok{sum}\NormalTok{((observed\_values }\SpecialCharTok{{-}}\NormalTok{ predicted\_values)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{))}
-\NormalTok{\}}
-\end{Highlighting}
-\end{Shaded}
-
-Utilizando a função \texttt{optim}, e escolhendo um valor inicial
-inicial para \(\theta\), é possível encontrar o ponto onde a soma de
-quadrados é mínima. Assim, são gerados os estimadores para cada o
-movimento Browniano e para o processo de Poisson.
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{initial\_theta }\OtherTok{\textless{}{-}} \DecValTok{100}
-
-\NormalTok{(estim\_theta\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{optim}\NormalTok{(}
-    \AttributeTok{par =}\NormalTok{ initial\_theta,}
-    \AttributeTok{fn =}\NormalTok{ least\_squares,}
-    \AttributeTok{X =}\NormalTok{ stock\_values,}
-    \AttributeTok{t =}\NormalTok{ t,}
-    \AttributeTok{csi =}\NormalTok{ B }\DocumentationTok{\#\# Trajetória do movimento Browniano}
-\NormalTok{)}\SpecialCharTok{$}\NormalTok{par)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-[1] 0.8203125
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{(estim\_theta\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{optim}\NormalTok{(}
-    \AttributeTok{par =}\NormalTok{ initial\_theta,}
-    \AttributeTok{fn =}\NormalTok{ least\_squares,}
-    \AttributeTok{X =}\NormalTok{ stock\_values,}
-    \AttributeTok{t =}\NormalTok{ t,}
-    \AttributeTok{csi =}\NormalTok{ N }\DocumentationTok{\#\# Trajetória do processo de Poisson}
-\NormalTok{)}\SpecialCharTok{$}\NormalTok{par)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-[1] 0
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{X\_prev\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{simulate\_Xtk}\NormalTok{(t, stock\_values, estim\_theta\_browniano, B)}
-\NormalTok{X\_prev\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{simulate\_Xtk}\NormalTok{(t, stock\_values, estim\_theta\_poisson, N)}
-
-\NormalTok{residuo\_browniano }\OtherTok{\textless{}{-}}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{] }\SpecialCharTok{{-}}\NormalTok{ X\_prev\_browniano}
-\FunctionTok{shapiro.test}\NormalTok{(residuo\_browniano)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-
-    Shapiro-Wilk normality test
-
-data:  residuo_browniano
-W = 0.97536, p-value = 0.0002736
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{hist}\NormalTok{(residuo\_browniano)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{figure}[H]
-
-{\centering \includegraphics{questao_2_files/figure-pdf/unnamed-chunk-7-1.pdf}
-
-}
-
-\end{figure}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{residuo\_poisson }\OtherTok{\textless{}{-}}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{] }\SpecialCharTok{{-}}\NormalTok{ X\_prev\_poisson}
-\FunctionTok{shapiro.test}\NormalTok{(residuo\_poisson)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-
-    Shapiro-Wilk normality test
-
-data:  residuo_poisson
-W = 0.9795, p-value = 0.001227
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{hist}\NormalTok{(residuo\_poisson)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{figure}[H]
-
-{\centering \includegraphics{questao_2_files/figure-pdf/unnamed-chunk-7-2.pdf}
-
-}
-
-\end{figure}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{dados\_sim }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
-    \AttributeTok{t =}\NormalTok{ t[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
-    \AttributeTok{X =}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
-    \AttributeTok{X\_prev\_browniano =}\NormalTok{ X\_prev\_browniano,}
-    \AttributeTok{X\_prev\_poisson =}\NormalTok{ X\_prev\_poisson}
-\NormalTok{) }\SpecialCharTok{|\textgreater{}} 
-\FunctionTok{pivot\_longer}\NormalTok{(}\AttributeTok{cols =} \FunctionTok{c}\NormalTok{(X, X\_prev\_browniano, X\_prev\_poisson),}
-             \AttributeTok{names\_to =} \StringTok{"Variavel"}\NormalTok{,}
-             \AttributeTok{values\_to =} \StringTok{"Valor"}\NormalTok{) }
-\end{Highlighting}
-\end{Shaded}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{dados\_sim }\SpecialCharTok{|\textgreater{}} 
-    \FunctionTok{filter}\NormalTok{(Variavel }\SpecialCharTok{!=} \StringTok{"X\_prev\_poisson"}\NormalTok{) }\SpecialCharTok{|\textgreater{}} 
-    \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
-    \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ t, }\AttributeTok{y =}\NormalTok{ Valor, }\AttributeTok{color =}\NormalTok{ Variavel)) }\SpecialCharTok{+}
-    \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
-         \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
-         \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
-         \AttributeTok{title =} \StringTok{"Ajuste do modelo de movimento Browniano}
-\StringTok{          aos dados de ações do BBAS3 em 2023"}\NormalTok{) }\SpecialCharTok{+}
-    \FunctionTok{theme\_minimal}\NormalTok{()}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{figure}[H]
-
-{\centering \includegraphics{questao_2_files/figure-pdf/unnamed-chunk-9-1.pdf}
-
-}
-
-\end{figure}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{dados\_sim }\SpecialCharTok{|\textgreater{}}
-    \FunctionTok{filter}\NormalTok{(Variavel }\SpecialCharTok{!=} \StringTok{"X\_prev\_browniano"}\NormalTok{) }\SpecialCharTok{|\textgreater{}}
-    \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
-    \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ t, }\AttributeTok{y =}\NormalTok{ Valor, }\AttributeTok{color =}\NormalTok{ Variavel)) }\SpecialCharTok{+}
-    \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
-         \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
-         \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
-         \AttributeTok{title =} \StringTok{"Ajuste do modelo de processos de Poisson}
-\StringTok{          aos dados de ações do BBAS3 em 2023"}\NormalTok{) }\SpecialCharTok{+}
-    \FunctionTok{theme\_minimal}\NormalTok{()}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{figure}[H]
-
-{\centering \includegraphics{questao_2_files/figure-pdf/unnamed-chunk-10-1.pdf}
-
-}
-
-\end{figure}
-
-\hypertarget{previsuxe3o-de-valores-de-2024}{%
-\section*{Previsão de valores de
-2024}\label{previsuxe3o-de-valores-de-2024}}
-\addcontentsline{toc}{section}{Previsão de valores de 2024}
-
-\markright{Previsão de valores de 2024}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# Define the stock symbol and specify the start and end dates}
-\NormalTok{start\_date\_valid }\OtherTok{\textless{}{-}} \StringTok{"2024{-}01{-}01"}
-\NormalTok{end\_date\_valid }\OtherTok{\textless{}{-}} \StringTok{"2024{-}01{-}15"}
-
-\CommentTok{\# Use getSymbols to fetch historical stock data}
-\FunctionTok{getSymbols}\NormalTok{(stock\_symbol,}
-    \AttributeTok{src =} \StringTok{"yahoo"}\NormalTok{,}
-    \AttributeTok{from =}\NormalTok{ start\_date\_valid,}
-    \AttributeTok{to =}\NormalTok{ end\_date\_valid}
-\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-[1] "BBAS3.SA"
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# Check the loaded data and get the closing values}
-\NormalTok{stock\_values\_valid }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(}\FunctionTok{Cl}\NormalTok{(}\FunctionTok{get}\NormalTok{(stock\_symbol)))}
-
-\CommentTok{\# Summary statistics}
-\FunctionTok{summary}\NormalTok{(stock\_values)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  32.64   40.78   47.00   45.49   49.07   55.39 
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{n\_valid }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(stock\_values\_valid) }\SpecialCharTok{{-}} \DecValTok{1}
-\NormalTok{t\_valid }\OtherTok{\textless{}{-}} \FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{, }\AttributeTok{length.out =}\NormalTok{ n\_valid }\SpecialCharTok{+} \DecValTok{1}\NormalTok{)}
-\NormalTok{N\_valid }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rpois}\NormalTok{(n\_valid, }\DecValTok{1} \SpecialCharTok{/}\NormalTok{ n\_valid)))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{X\_prev\_valid }\OtherTok{\textless{}{-}} \FunctionTok{simulate\_Xtk}\NormalTok{(t\_valid, stock\_values\_valid, estim\_theta\_poisson, N\_valid)}
-
-\NormalTok{dados\_valid }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
-    \AttributeTok{t =}\NormalTok{ t\_valid[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
-    \AttributeTok{X =}\NormalTok{ stock\_values\_valid[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
-    \AttributeTok{X\_prev\_valid =}\NormalTok{ X\_prev\_valid}
-\NormalTok{) }\SpecialCharTok{|\textgreater{}} 
-\FunctionTok{pivot\_longer}\NormalTok{(}\AttributeTok{cols =} \FunctionTok{c}\NormalTok{(X, X\_prev\_valid),}
-             \AttributeTok{names\_to =} \StringTok{"Variavel"}\NormalTok{,}
-             \AttributeTok{values\_to =} \StringTok{"Valor"}\NormalTok{) }
-\end{Highlighting}
-\end{Shaded}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{dados\_valid }\SpecialCharTok{|\textgreater{}}
-    \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
-    \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ t, }\AttributeTok{y =}\NormalTok{ Valor, }\AttributeTok{color =}\NormalTok{ Variavel)) }\SpecialCharTok{+}
-    \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
-         \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
-         \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
-         \AttributeTok{title =} \StringTok{"Ajuste do modelo de processos de Poisson aos dados}
-\StringTok{          de ações do BBAS3 nas primeiras semanas de 2024"}\NormalTok{) }\SpecialCharTok{+}
-    \FunctionTok{theme\_minimal}\NormalTok{()}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{figure}[H]
-
-{\centering \includegraphics{questao_2_files/figure-pdf/unnamed-chunk-14-1.pdf}
+{\centering \includegraphics{./index_files/figure-pdf/unnamed-chunk-8-1.pdf}
 
 }
 
@@ -925,9 +564,9 @@ W = 0.9795, p-value = 0.001227
 
 \markboth{Questão 2 Acypreste}{Questão 2 Acypreste}
 
-\hypertarget{aplicauxe7uxe3o-ao-modelo-empuxedrico-2}{%
+\hypertarget{aplicauxe7uxe3o-ao-modelo-empuxedrico-1}{%
 \section*{Aplicação ao modelo
-empírico}\label{aplicauxe7uxe3o-ao-modelo-empuxedrico-2}}
+empírico}\label{aplicauxe7uxe3o-ao-modelo-empuxedrico-1}}
 \addcontentsline{toc}{section}{Aplicação ao modelo empírico}
 
 \markright{Aplicação ao modelo empírico}
@@ -1012,13 +651,12 @@ modelo, usando os tempos, o histórico do processo, o parâmetro
 \NormalTok{    timeline }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(t)}
 \NormalTok{    history }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(X)}
 \NormalTok{    csi }\OtherTok{\textless{}{-}} \FunctionTok{as.vector}\NormalTok{(csi)}
-\NormalTok{stop}
+\NormalTok{    stop}
 
     \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{length}\NormalTok{(timeline) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(history) }\SpecialCharTok{||}
         \FunctionTok{length}\NormalTok{(timeline) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(csi) }\SpecialCharTok{||}
         \FunctionTok{length}\NormalTok{(history) }\SpecialCharTok{!=} \FunctionTok{length}\NormalTok{(csi)) \{}
         \FunctionTok{stop}\NormalTok{(}\StringTok{"The timeline, the history and the csi vector must have the same length!"}\NormalTok{)}
-        
 \NormalTok{    \}}
 
 \NormalTok{    n }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(timeline)}
@@ -1026,25 +664,10 @@ modelo, usando os tempos, o histórico do processo, o parâmetro
 \NormalTok{    tj }\OtherTok{\textless{}{-}}\NormalTok{ timeline[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
 \NormalTok{    tj\_1 }\OtherTok{\textless{}{-}}\NormalTok{ timeline[}\SpecialCharTok{{-}}\NormalTok{n]}
 \NormalTok{    Xtj\_1 }\OtherTok{\textless{}{-}}\NormalTok{ history[}\SpecialCharTok{{-}}\NormalTok{n]}
-    
-\NormalTok{    fatork }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, n }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{)}
-\NormalTok{    Xtk }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, n }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{)}
-    
-    
-    
-    \ControlFlowTok{for}\NormalTok{(j }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{(n}\DecValTok{{-}1}\NormalTok{))\{}
-      
-\NormalTok{    fatork[j] }\OtherTok{\textless{}{-}}\NormalTok{ Xtj\_1[j] }\SpecialCharTok{*}\NormalTok{ (tj[j] }\SpecialCharTok{{-}}\NormalTok{ tj\_1[j])}
-    
-\NormalTok{    sumk }\OtherTok{\textless{}{-}} \FunctionTok{cumsum}\NormalTok{(fatork[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{j])[j]}
+\NormalTok{    fatork }\OtherTok{\textless{}{-}}\NormalTok{ Xtj\_1 }\SpecialCharTok{*}\NormalTok{ (tj }\SpecialCharTok{{-}}\NormalTok{ tj\_1)}
+\NormalTok{    sumk }\OtherTok{\textless{}{-}} \FunctionTok{cumsum}\NormalTok{(fatork)}
+\NormalTok{    Xtk }\OtherTok{\textless{}{-}}\NormalTok{ Xtj\_1 }\SpecialCharTok{{-}}\NormalTok{ theta }\SpecialCharTok{*}\NormalTok{ sumk }\SpecialCharTok{+}\NormalTok{ csi[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
 
-    
-\NormalTok{    Xtk[j] }\OtherTok{\textless{}{-}}\NormalTok{ Xtj\_1[j] }\SpecialCharTok{{-}}\NormalTok{ theta }\SpecialCharTok{*}\NormalTok{ sumk }\SpecialCharTok{+}\NormalTok{ csi[j]}
-    
- 
-\NormalTok{    \}}
-    
-    
     \FunctionTok{return}\NormalTok{(Xtk)}
 \NormalTok{\}}
 \end{Highlighting}
@@ -1107,7 +730,7 @@ movimento Browniano e para o processo de Poisson.
 \end{Shaded}
 
 \begin{verbatim}
-[1] 5.859375
+[1] 5.9375
 \end{verbatim}
 
 \begin{Shaded}
@@ -1135,11 +758,11 @@ movimento Browniano e para o processo de Poisson.
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{X\_prev\_browniano }\OtherTok{\textless{}{-}}
-  \FunctionTok{simulate\_Xtk}\NormalTok{(t, stock\_values, estim\_theta\_browniano, B)}
+    \FunctionTok{simulate\_Xtk}\NormalTok{(t, stock\_values, estim\_theta\_browniano, B)}
 \NormalTok{X\_prev\_poisson }\OtherTok{\textless{}{-}}
-  \FunctionTok{simulate\_Xtk}\NormalTok{(t, stock\_values, estim\_theta\_poisson, N)}
+    \FunctionTok{simulate\_Xtk}\NormalTok{(t, stock\_values, estim\_theta\_poisson, N)}
 \NormalTok{X\_prev\_poisson\_compensated }\OtherTok{\textless{}{-}}
-  \FunctionTok{simulate\_Xtk}\NormalTok{(t, stock\_values, estim\_theta\_poisson\_compensated, N\_compensated)}
+    \FunctionTok{simulate\_Xtk}\NormalTok{(t, stock\_values, estim\_theta\_poisson\_compensated, N\_compensated)}
 
 \NormalTok{residuo\_browniano }\OtherTok{\textless{}{-}}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{] }\SpecialCharTok{{-}}\NormalTok{ X\_prev\_browniano}
 \FunctionTok{shapiro.test}\NormalTok{(residuo\_browniano)}
@@ -1151,7 +774,7 @@ movimento Browniano e para o processo de Poisson.
     Shapiro-Wilk normality test
 
 data:  residuo_browniano
-W = 0.98166, p-value = 0.0028
+W = 0.97457, p-value = 0.000208
 \end{verbatim}
 
 \begin{Shaded}
@@ -1162,7 +785,7 @@ W = 0.98166, p-value = 0.0028
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-1.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-1.pdf}
 
 }
 
@@ -1177,7 +800,7 @@ W = 0.98166, p-value = 0.0028
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-2.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-2.pdf}
 
 }
 
@@ -1195,7 +818,7 @@ W = 0.98166, p-value = 0.0028
     Shapiro-Wilk normality test
 
 data:  residuo_poisson
-W = 0.94498, p-value = 5.071e-08
+W = 0.93173, p-value = 2.835e-09
 \end{verbatim}
 
 \begin{Shaded}
@@ -1206,7 +829,7 @@ W = 0.94498, p-value = 5.071e-08
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-3.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-3.pdf}
 
 }
 
@@ -1221,7 +844,7 @@ W = 0.94498, p-value = 5.071e-08
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-4.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-4.pdf}
 
 }
 
@@ -1239,7 +862,7 @@ W = 0.94498, p-value = 5.071e-08
     Shapiro-Wilk normality test
 
 data:  residuo_poisson_compensated
-W = 0.9067, p-value = 2.829e-11
+W = 0.9024, p-value = 1.395e-11
 \end{verbatim}
 
 \begin{Shaded}
@@ -1250,7 +873,7 @@ W = 0.9067, p-value = 2.829e-11
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-5.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-5.pdf}
 
 }
 
@@ -1265,7 +888,7 @@ W = 0.9067, p-value = 2.829e-11
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-6.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-7-6.pdf}
 
 }
 
@@ -1279,37 +902,42 @@ W = 0.9067, p-value = 2.829e-11
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{dados\_sim }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+\NormalTok{dados\_mod }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
     \AttributeTok{t =}\NormalTok{ t[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
-    \AttributeTok{X =}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{ ],}
+    \AttributeTok{X =}\NormalTok{ stock\_values[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
     \AttributeTok{X\_prev\_browniano =}\NormalTok{ X\_prev\_browniano,}
     \AttributeTok{X\_prev\_poisson =}\NormalTok{ X\_prev\_poisson,}
     \AttributeTok{X\_prev\_poisson\_compensated =}\NormalTok{ X\_prev\_poisson\_compensated}
-\NormalTok{) }\SpecialCharTok{|\textgreater{}} 
-\FunctionTok{pivot\_longer}\NormalTok{(}\AttributeTok{cols =} \FunctionTok{c}\NormalTok{(X, X\_prev\_browniano, X\_prev\_poisson, X\_prev\_poisson\_compensated),}
-             \AttributeTok{names\_to =} \StringTok{"Variavel"}\NormalTok{,}
-             \AttributeTok{values\_to =} \StringTok{"Valor"}\NormalTok{) }
+\NormalTok{)}
+\NormalTok{dados\_sim }\OtherTok{\textless{}{-}}\NormalTok{ dados\_mod }\SpecialCharTok{|\textgreater{}}
+    \FunctionTok{pivot\_longer}\NormalTok{(}
+        \AttributeTok{cols =} \FunctionTok{c}\NormalTok{(X, X\_prev\_browniano, X\_prev\_poisson, X\_prev\_poisson\_compensated),}
+        \AttributeTok{names\_to =} \StringTok{"Variavel"}\NormalTok{,}
+        \AttributeTok{values\_to =} \StringTok{"Valor"}
+\NormalTok{    )}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{dados\_sim }\SpecialCharTok{|\textgreater{}} 
-    \FunctionTok{filter}\NormalTok{(Variavel }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{"X"}\NormalTok{, }\StringTok{"X\_prev\_browniano"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}} 
+\NormalTok{dados\_sim }\SpecialCharTok{|\textgreater{}}
+    \FunctionTok{filter}\NormalTok{(Variavel }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{"X"}\NormalTok{, }\StringTok{"X\_prev\_browniano"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
     \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
     \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ t, }\AttributeTok{y =}\NormalTok{ Valor, }\AttributeTok{color =}\NormalTok{ Variavel)) }\SpecialCharTok{+}
-    \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
-         \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
-         \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
-         \AttributeTok{title =} \StringTok{"Ajuste do modelo de movimento Browniano}
-\StringTok{          aos dados de ações do BBAS3 em 2023"}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{labs}\NormalTok{(}
+        \AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
+        \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
+        \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
+        \AttributeTok{title =} \StringTok{"Ajuste do modelo de movimento Browniano}
+\StringTok{          aos dados de ações do BBAS3 em 2023"}
+\NormalTok{    ) }\SpecialCharTok{+}
     \FunctionTok{theme\_minimal}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-9-1.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-9-1.pdf}
 
 }
 
@@ -1321,18 +949,20 @@ W = 0.9067, p-value = 2.829e-11
     \FunctionTok{filter}\NormalTok{(Variavel }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{"X"}\NormalTok{, }\StringTok{"X\_prev\_poisson"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
     \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
     \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ t, }\AttributeTok{y =}\NormalTok{ Valor, }\AttributeTok{color =}\NormalTok{ Variavel)) }\SpecialCharTok{+}
-    \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
-         \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
-         \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
-         \AttributeTok{title =} \StringTok{"Ajuste do modelo de processos de Poisson}
-\StringTok{          aos dados de ações do BBAS3 em 2023"}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{labs}\NormalTok{(}
+        \AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
+        \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
+        \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
+        \AttributeTok{title =} \StringTok{"Ajuste do modelo de processos de Poisson}
+\StringTok{          aos dados de ações do BBAS3 em 2023"}
+\NormalTok{    ) }\SpecialCharTok{+}
     \FunctionTok{theme\_minimal}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-10-1.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-10-1.pdf}
 
 }
 
@@ -1341,32 +971,137 @@ W = 0.9067, p-value = 2.829e-11
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{dados\_sim }\SpecialCharTok{|\textgreater{}}
-    \FunctionTok{filter}\NormalTok{(Variavel  }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{"X"}\NormalTok{, }\StringTok{"X\_prev\_poisson\_compensated"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
+    \FunctionTok{filter}\NormalTok{(Variavel }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{"X"}\NormalTok{, }\StringTok{"X\_prev\_poisson\_compensated"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
     \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
     \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ t, }\AttributeTok{y =}\NormalTok{ Valor, }\AttributeTok{color =}\NormalTok{ Variavel)) }\SpecialCharTok{+}
-    \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
-         \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
-         \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
-         \AttributeTok{title =} \StringTok{"Ajuste do modelo de processos de Poisson Compensado}
-\StringTok{          aos dados de ações do BBAS3 em 2023"}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{labs}\NormalTok{(}
+        \AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
+        \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
+        \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
+        \AttributeTok{title =} \StringTok{"Ajuste do modelo de processos de Poisson Compensado}
+\StringTok{          aos dados de ações do BBAS3 em 2023"}
+\NormalTok{    ) }\SpecialCharTok{+}
     \FunctionTok{theme\_minimal}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-11-1.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-11-1.pdf}
 
 }
 
 \end{figure}
 
-\hypertarget{f-previsuxe3o-de-valores-de-2024}{%
-\section*{f) Previsão de valores de
-2024}\label{f-previsuxe3o-de-valores-de-2024}}
-\addcontentsline{toc}{section}{f) Previsão de valores de 2024}
+\hypertarget{f-definindo-o-melhor-modelo}{%
+\section*{f) Definindo o melhor
+modelo}\label{f-definindo-o-melhor-modelo}}
+\addcontentsline{toc}{section}{f) Definindo o melhor modelo}
 
-\markright{f) Previsão de valores de 2024}
+\markright{f) Definindo o melhor modelo}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{(mse\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(residuo\_browniano}\SpecialCharTok{**}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 8.369757
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{modelo\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(}\AttributeTok{data =}\NormalTok{ dados\_mod, X }\SpecialCharTok{\textasciitilde{}}\NormalTok{ X\_prev\_browniano)}
+\NormalTok{(r2\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(modelo\_browniano)}\SpecialCharTok{$}\NormalTok{r.squared)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 0.7351166
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{(aic\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(modelo\_browniano))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 1190.829
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{(mse\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(residuo\_poisson}\SpecialCharTok{**}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 51.26353
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{modelo\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(}\AttributeTok{data =}\NormalTok{ dados\_mod, X }\SpecialCharTok{\textasciitilde{}}\NormalTok{ X\_prev\_poisson)}
+\NormalTok{(r2\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(modelo\_poisson)}\SpecialCharTok{$}\NormalTok{r.squared)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 0.1688992
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{(aic\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(modelo\_poisson))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 1473.264
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{(mse\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(residuo\_poisson\_compensated}\SpecialCharTok{**}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 45.57743
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{modelo\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(}
+    \AttributeTok{data =}\NormalTok{ dados\_mod,}
+\NormalTok{    X }\SpecialCharTok{\textasciitilde{}}\NormalTok{ X\_prev\_poisson\_compensated}
+\NormalTok{)}
+\NormalTok{(r2\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(modelo\_poisson\_compensated)}\SpecialCharTok{$}\NormalTok{r.squared)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 0.7289872
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{(aic\_poisson\_compensated }\OtherTok{\textless{}{-}} \FunctionTok{AIC}\NormalTok{(modelo\_poisson))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+[1] 1473.264
+\end{verbatim}
+
+\hypertarget{g-previsuxe3o-de-valores-de-2024}{%
+\section*{g) Previsão de valores de
+2024}\label{g-previsuxe3o-de-valores-de-2024}}
+\addcontentsline{toc}{section}{g) Previsão de valores de 2024}
+
+\markright{g) Previsão de valores de 2024}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -1408,27 +1143,33 @@ W = 0.9067, p-value = 2.829e-11
 \NormalTok{t\_valid }\OtherTok{\textless{}{-}} \FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{, }\AttributeTok{length.out =}\NormalTok{ n\_valid }\SpecialCharTok{+} \DecValTok{1}\NormalTok{)}
 \NormalTok{N\_valid\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(n\_valid, }\AttributeTok{mean =} \DecValTok{0}\NormalTok{, }\AttributeTok{sd =} \DecValTok{1}\NormalTok{)))}
 \NormalTok{N\_valid\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rpois}\NormalTok{(n\_valid, }\DecValTok{1}\NormalTok{)))}
-\NormalTok{N\_valid\_poisson\_compenstated }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rpois}\NormalTok{(n\_valid, }\DecValTok{1}\NormalTok{)) }\SpecialCharTok{{-}} 
-                                  \FunctionTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{, n\_valid, }\AttributeTok{by =} \DecValTok{1}\NormalTok{))}
+\NormalTok{N\_valid\_poisson\_compenstated }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FunctionTok{cumsum}\NormalTok{(}\FunctionTok{rpois}\NormalTok{(n\_valid, }\DecValTok{1}\NormalTok{)) }\SpecialCharTok{{-}}
+    \FunctionTok{seq}\NormalTok{(}\DecValTok{1}\NormalTok{, n\_valid, }\AttributeTok{by =} \DecValTok{1}\NormalTok{))}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{X\_prev\_valid\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{simulate\_Xtk}\NormalTok{(t\_valid,}
-\NormalTok{                                       stock\_values\_valid,}
-\NormalTok{                                       estim\_theta\_browniano,}
-\NormalTok{                                       N\_valid\_browniano)}
-\NormalTok{X\_prev\_valid\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{simulate\_Xtk}\NormalTok{(t\_valid,}
-\NormalTok{                                     stock\_values\_valid,}
-\NormalTok{                                     estim\_theta\_poisson,}
-\NormalTok{                                     N\_valid\_poisson)}
+\NormalTok{X\_prev\_valid\_browniano }\OtherTok{\textless{}{-}} \FunctionTok{simulate\_Xtk}\NormalTok{(}
+\NormalTok{    t\_valid,}
+\NormalTok{    stock\_values\_valid,}
+\NormalTok{    estim\_theta\_browniano,}
+\NormalTok{    N\_valid\_browniano}
+\NormalTok{)}
+\NormalTok{X\_prev\_valid\_poisson }\OtherTok{\textless{}{-}} \FunctionTok{simulate\_Xtk}\NormalTok{(}
+\NormalTok{    t\_valid,}
+\NormalTok{    stock\_values\_valid,}
+\NormalTok{    estim\_theta\_poisson,}
+\NormalTok{    N\_valid\_poisson}
+\NormalTok{)}
 
-\NormalTok{X\_prev\_valid\_poisson\_compensated }\OtherTok{\textless{}{-}} 
-    \FunctionTok{simulate\_Xtk}\NormalTok{(t\_valid,}
-\NormalTok{                 stock\_values\_valid,}
-\NormalTok{                 estim\_theta\_poisson\_compensated,}
-\NormalTok{                 N\_valid\_poisson\_compenstated)                                     }
+\NormalTok{X\_prev\_valid\_poisson\_compensated }\OtherTok{\textless{}{-}}
+    \FunctionTok{simulate\_Xtk}\NormalTok{(}
+\NormalTok{        t\_valid,}
+\NormalTok{        stock\_values\_valid,}
+\NormalTok{        estim\_theta\_poisson\_compensated,}
+\NormalTok{        N\_valid\_poisson\_compenstated}
+\NormalTok{    )}
 
 \NormalTok{dados\_valid }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
     \AttributeTok{t =}\NormalTok{ t\_valid[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
@@ -1436,21 +1177,19 @@ W = 0.9067, p-value = 2.829e-11
     \AttributeTok{X\_prev\_valid\_browniano =}\NormalTok{ X\_prev\_valid\_browniano,}
     \AttributeTok{X\_prev\_valid\_poisson =}\NormalTok{ X\_prev\_valid\_poisson,}
     \AttributeTok{X\_prev\_valid\_poisson\_compensated =}\NormalTok{ X\_prev\_valid\_poisson\_compensated}
-\NormalTok{) }\SpecialCharTok{|\textgreater{}} 
-\FunctionTok{pivot\_longer}\NormalTok{(}\AttributeTok{cols =} \FunctionTok{c}\NormalTok{(X,}
-\NormalTok{                      X\_prev\_valid\_browniano,}
-\NormalTok{                      X\_prev\_valid\_poisson,}
-\NormalTok{                      X\_prev\_valid\_poisson\_compensated),}
-             \AttributeTok{names\_to =} \StringTok{"Variavel"}\NormalTok{,}
-             \AttributeTok{values\_to =} \StringTok{"Valor"}\NormalTok{) }
+\NormalTok{) }\SpecialCharTok{|\textgreater{}}
+    \FunctionTok{pivot\_longer}\NormalTok{(}
+        \AttributeTok{cols =} \FunctionTok{c}\NormalTok{(}
+\NormalTok{            X,}
+\NormalTok{            X\_prev\_valid\_browniano,}
+\NormalTok{            X\_prev\_valid\_poisson,}
+\NormalTok{            X\_prev\_valid\_poisson\_compensated}
+\NormalTok{        ),}
+        \AttributeTok{names\_to =} \StringTok{"Variavel"}\NormalTok{,}
+        \AttributeTok{values\_to =} \StringTok{"Valor"}
+\NormalTok{    )}
 \end{Highlighting}
 \end{Shaded}
-
-\hypertarget{g}{%
-\section*{g)}\label{g}}
-\addcontentsline{toc}{section}{g)}
-
-\markright{g)}
 
 As previsões geradas pelos três modelos são:
 
@@ -1459,18 +1198,20 @@ As previsões geradas pelos três modelos são:
 \NormalTok{dados\_valid }\SpecialCharTok{|\textgreater{}}
     \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
     \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ t, }\AttributeTok{y =}\NormalTok{ Valor, }\AttributeTok{color =}\NormalTok{ Variavel)) }\SpecialCharTok{+}
-    \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
-         \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
-         \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
-         \AttributeTok{title =} \StringTok{"Ajuste do modelo do Movimento Browniano aos dados}
-\StringTok{          de ações do BBAS3 nas primeiras semanas de 2024"}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{labs}\NormalTok{(}
+        \AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
+        \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
+        \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
+        \AttributeTok{title =} \StringTok{"Ajuste do modelo do Movimento Browniano aos dados}
+\StringTok{          de ações do BBAS3 nas primeiras semanas de 2024"}
+\NormalTok{    ) }\SpecialCharTok{+}
     \FunctionTok{theme\_minimal}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-15-1.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-16-1.pdf}
 
 }
 
@@ -1485,18 +1226,20 @@ movimento Browniano.
     \FunctionTok{filter}\NormalTok{(Variavel }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{"X"}\NormalTok{, }\StringTok{"X\_prev\_valid\_browniano"}\NormalTok{)) }\SpecialCharTok{|\textgreater{}}
     \FunctionTok{ggplot}\NormalTok{() }\SpecialCharTok{+}
     \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ t, }\AttributeTok{y =}\NormalTok{ Valor, }\AttributeTok{color =}\NormalTok{ Variavel)) }\SpecialCharTok{+}
-    \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
-         \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
-         \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
-         \AttributeTok{title =} \StringTok{"Ajuste do modelo do Movimento Browniano aos dados}
-\StringTok{          de ações do BBAS3 nas primeiras semanas de 2024"}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{labs}\NormalTok{(}
+        \AttributeTok{x =} \StringTok{"Tempo"}\NormalTok{,}
+        \AttributeTok{y =} \StringTok{"Valor das ações do BBAS3"}\NormalTok{,}
+        \AttributeTok{color =} \ConstantTok{NULL}\NormalTok{,}
+        \AttributeTok{title =} \StringTok{"Ajuste do modelo do Movimento Browniano aos dados}
+\StringTok{          de ações do BBAS3 nas primeiras semanas de 2024"}
+\NormalTok{    ) }\SpecialCharTok{+}
     \FunctionTok{theme\_minimal}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{figure}[H]
 
-{\centering \includegraphics{questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-16-1.pdf}
+{\centering \includegraphics{./questao-mudancas-acypreste_files/figure-pdf/unnamed-chunk-17-1.pdf}
 
 }
 

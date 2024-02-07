@@ -7,12 +7,7 @@ book:
   author: "Professor Felipe Quintino"
   chapters:
     - index.qmd
-    - questao_2.qmd
     - questao-mudancas-acypreste.qmd
- 
-
-
-
 
 execute:
   warning: false
@@ -20,10 +15,6 @@ execute:
   eval: true
   message: false
 
-
 format:
   PrettyPDF-pdf:
     keep-tex: true
-
-
-

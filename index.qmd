@@ -76,7 +76,7 @@ dados <-
         labels = state_labels
     ))
 
-
+hist(dados$Precipitacao)
 
 ```
 

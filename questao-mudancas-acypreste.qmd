@@ -60,13 +60,12 @@ simulate_Xtk <- function(t, X, theta, csi) {
     timeline <- as.vector(t)
     history <- as.vector(X)
     csi <- as.vector(csi)
-stop
+    stop
 
     if (length(timeline) != length(history) ||
         length(timeline) != length(csi) ||
         length(history) != length(csi)) {
         stop("The timeline, the history and the csi vector must have the same length!")
-        
     }
 
     n <- length(timeline)
@@ -74,25 +73,10 @@ stop
     tj <- timeline[-1]
     tj_1 <- timeline[-n]
     Xtj_1 <- history[-n]
-    
-    fatork <- rep(0, n - 1)
-    Xtk <- rep(0, n - 1)
-    
-    
-    
-    for(j in 1:(n-1)){
-      
-    fatork[j] <- Xtj_1[j] * (tj[j] - tj_1[j])
-    
-    sumk <- cumsum(fatork[1:j])[j]
+    fatork <- Xtj_1 * (tj - tj_1)
+    sumk <- cumsum(fatork)
+    Xtk <- Xtj_1 - theta * sumk + csi[-1]
 
-    
-    Xtk[j] <- Xtj_1[j] - theta * sumk + csi[j]
-    
- 
-    }
-    
-    
     return(Xtk)
 }
 ```
@@ -123,6 +107,7 @@ initial_theta <- 100
     t = t,
     csi = B ## Trajetória do movimento Browniano
 )$par)
+
 (estim_theta_poisson <- optim(
     par = initial_theta,
     fn = least_squares,
@@ -145,11 +130,11 @@ initial_theta <- 100
 
 ```{r}
 X_prev_browniano <-
-  simulate_Xtk(t, stock_values, estim_theta_browniano, B)
+    simulate_Xtk(t, stock_values, estim_theta_browniano, B)
 X_prev_poisson <-
-  simulate_Xtk(t, stock_values, estim_theta_poisson, N)
+    simulate_Xtk(t, stock_values, estim_theta_poisson, N)
 X_prev_poisson_compensated <-
-  simulate_Xtk(t, stock_values, estim_theta_poisson_compensated, N_compensated)
+    simulate_Xtk(t, stock_values, estim_theta_poisson_compensated, N_compensated)
 
 residuo_browniano <- stock_values[-1] - X_prev_browniano
 shapiro.test(residuo_browniano)
@@ -175,29 +160,34 @@ qqline(residuo_poisson_compensated)
 ## e)
 
 ```{r}
-dados_sim <- data.frame(
+dados_mod <- data.frame(
     t = t[-1],
-    X = stock_values[-1 ],
+    X = stock_values[-1],
     X_prev_browniano = X_prev_browniano,
     X_prev_poisson = X_prev_poisson,
     X_prev_poisson_compensated = X_prev_poisson_compensated
-) |> 
-pivot_longer(cols = c(X, X_prev_browniano, X_prev_poisson, X_prev_poisson_compensated),
-             names_to = "Variavel",
-             values_to = "Valor") 
+)
+dados_sim <- dados_mod |>
+    pivot_longer(
+        cols = c(X, X_prev_browniano, X_prev_poisson, X_prev_poisson_compensated),
+        names_to = "Variavel",
+        values_to = "Valor"
+    )
 ```
 
 
 ```{r}
-dados_sim |> 
-    filter(Variavel %in% c("X", "X_prev_browniano")) |> 
+dados_sim |>
+    filter(Variavel %in% c("X", "X_prev_browniano")) |>
     ggplot() +
     geom_line(aes(x = t, y = Valor, color = Variavel)) +
-    labs(x = "Tempo",
-         y = "Valor das ações do BBAS3",
-         color = NULL,
-         title = "Ajuste do modelo de movimento Browniano
-          aos dados de ações do BBAS3 em 2023") +
+    labs(
+        x = "Tempo",
+        y = "Valor das ações do BBAS3",
+        color = NULL,
+        title = "Ajuste do modelo de movimento Browniano
+          aos dados de ações do BBAS3 em 2023"
+    ) +
     theme_minimal()
 ```
 
@@ -206,30 +196,55 @@ dados_sim |>
     filter(Variavel %in% c("X", "X_prev_poisson")) |>
     ggplot() +
     geom_line(aes(x = t, y = Valor, color = Variavel)) +
-    labs(x = "Tempo",
-         y = "Valor das ações do BBAS3",
-         color = NULL,
-         title = "Ajuste do modelo de processos de Poisson
-          aos dados de ações do BBAS3 em 2023") +
+    labs(
+        x = "Tempo",
+        y = "Valor das ações do BBAS3",
+        color = NULL,
+        title = "Ajuste do modelo de processos de Poisson
+          aos dados de ações do BBAS3 em 2023"
+    ) +
     theme_minimal()
 ```
 
 
 ```{r}
 dados_sim |>
-    filter(Variavel  %in% c("X", "X_prev_poisson_compensated")) |>
+    filter(Variavel %in% c("X", "X_prev_poisson_compensated")) |>
     ggplot() +
     geom_line(aes(x = t, y = Valor, color = Variavel)) +
-    labs(x = "Tempo",
-         y = "Valor das ações do BBAS3",
-         color = NULL,
-         title = "Ajuste do modelo de processos de Poisson Compensado
-          aos dados de ações do BBAS3 em 2023") +
+    labs(
+        x = "Tempo",
+        y = "Valor das ações do BBAS3",
+        color = NULL,
+        title = "Ajuste do modelo de processos de Poisson Compensado
+          aos dados de ações do BBAS3 em 2023"
+    ) +
     theme_minimal()
 ```
 
+## f) Definindo o melhor modelo
 
-## f) Previsão de valores de 2024
+```{r}
+(mse_browniano <- mean(residuo_browniano**2))
+modelo_browniano <- lm(data = dados_mod, X ~ X_prev_browniano)
+(r2_browniano <- summary(modelo_browniano)$r.squared)
+(aic_browniano <- AIC(modelo_browniano))
+
+(mse_poisson <- mean(residuo_poisson**2))
+modelo_poisson <- lm(data = dados_mod, X ~ X_prev_poisson)
+(r2_poisson <- summary(modelo_poisson)$r.squared)
+(aic_poisson <- AIC(modelo_poisson))
+
+(mse_poisson_compensated <- mean(residuo_poisson_compensated**2))
+modelo_poisson_compensated <- lm(
+    data = dados_mod,
+    X ~ X_prev_poisson_compensated
+)
+(r2_poisson_compensated <- summary(modelo_poisson_compensated)$r.squared)
+(aic_poisson_compensated <- AIC(modelo_poisson))
+```
+
+## g) Previsão de valores de 2024
 
 ```{r}
 # Define the stock symbol and specify the start and end dates
@@ -256,26 +271,32 @@ n_valid <- length(stock_values_valid) - 1
 t_valid <- seq(0, 1, length.out = n_valid + 1)
 N_valid_browniano <- c(0, cumsum(rnorm(n_valid, mean = 0, sd = 1)))
 N_valid_poisson <- c(0, cumsum(rpois(n_valid, 1)))
-N_valid_poisson_compenstated <- c(0, cumsum(rpois(n_valid, 1)) - 
-                                  seq(1, n_valid, by = 1))
+N_valid_poisson_compenstated <- c(0, cumsum(rpois(n_valid, 1)) -
+    seq(1, n_valid, by = 1))
 ```
 
 
 ```{r}
-X_prev_valid_browniano <- simulate_Xtk(t_valid,
-                                       stock_values_valid,
-                                       estim_theta_browniano,
-                                       N_valid_browniano)
-X_prev_valid_poisson <- simulate_Xtk(t_valid,
-                                     stock_values_valid,
-                                     estim_theta_poisson,
-                                     N_valid_poisson)
+X_prev_valid_browniano <- simulate_Xtk(
+    t_valid,
+    stock_values_valid,
+    estim_theta_browniano,
+    N_valid_browniano
+)
+X_prev_valid_poisson <- simulate_Xtk(
+    t_valid,
+    stock_values_valid,
+    estim_theta_poisson,
+    N_valid_poisson
+)
 
-X_prev_valid_poisson_compensated <- 
-    simulate_Xtk(t_valid,
-                 stock_values_valid,
-                 estim_theta_poisson_compensated,
-                 N_valid_poisson_compenstated)                                     
+X_prev_valid_poisson_compensated <-
+    simulate_Xtk(
+        t_valid,
+        stock_values_valid,
+        estim_theta_poisson_compensated,
+        N_valid_poisson_compenstated
+    )
 
 dados_valid <- data.frame(
     t = t_valid[-1],
@@ -283,16 +304,19 @@ dados_valid <- data.frame(
     X_prev_valid_browniano = X_prev_valid_browniano,
     X_prev_valid_poisson = X_prev_valid_poisson,
     X_prev_valid_poisson_compensated = X_prev_valid_poisson_compensated
-) |> 
-pivot_longer(cols = c(X,
-                      X_prev_valid_browniano,
-                      X_prev_valid_poisson,
-                      X_prev_valid_poisson_compensated),
-             names_to = "Variavel",
-             values_to = "Valor") 
+) |>
+    pivot_longer(
+        cols = c(
+            X,
+            X_prev_valid_browniano,
+            X_prev_valid_poisson,
+            X_prev_valid_poisson_compensated
+        ),
+        names_to = "Variavel",
+        values_to = "Valor"
+    )
 ```
 
-## g)
 
 As previsões geradas pelos três modelos são:
 
@@ -300,11 +324,13 @@ As previsões geradas pelos três modelos são:
 dados_valid |>
     ggplot() +
     geom_line(aes(x = t, y = Valor, color = Variavel)) +
-    labs(x = "Tempo",
-         y = "Valor das ações do BBAS3",
-         color = NULL,
-         title = "Ajuste do modelo do Movimento Browniano aos dados
-          de ações do BBAS3 nas primeiras semanas de 2024") +
+    labs(
+        x = "Tempo",
+        y = "Valor das ações do BBAS3",
+        color = NULL,
+        title = "Ajuste do modelo do Movimento Browniano aos dados
+          de ações do BBAS3 nas primeiras semanas de 2024"
+    ) +
     theme_minimal()
 ```
 
@@ -316,10 +342,12 @@ dados_valid |>
     filter(Variavel %in% c("X", "X_prev_valid_browniano")) |>
     ggplot() +
     geom_line(aes(x = t, y = Valor, color = Variavel)) +
-    labs(x = "Tempo",
-         y = "Valor das ações do BBAS3",
-         color = NULL,
-         title = "Ajuste do modelo do Movimento Browniano aos dados
-          de ações do BBAS3 nas primeiras semanas de 2024") +
+    labs(
+        x = "Tempo",
+        y = "Valor das ações do BBAS3",
+        color = NULL,
+        title = "Ajuste do modelo do Movimento Browniano aos dados
+          de ações do BBAS3 nas primeiras semanas de 2024"
+    ) +
     theme_minimal()
 ```
